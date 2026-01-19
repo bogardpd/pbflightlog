@@ -65,5 +65,5 @@ python flight_log.py import-recent
 
 ## Data model notes
 
-* The flight log is stored as a GeoPackage.
+* The flight log is stored as a GeoPackage, as described in the [schema](docs/schema.md).
 * Individual flights may or may not have geometry (e.g., older flights without known tracks).

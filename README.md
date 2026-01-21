@@ -1,7 +1,7 @@
 # Flight Log Tools
 
 > [!IMPORTANT]
-> These scripts are still pre-release and may be incomplete.
+> This module is still pre-release and may be incomplete.
 
 A small collection of command-line tools for working with a personal flight log stored in a GeoPackage.
 
@@ -11,19 +11,19 @@ A small collection of command-line tools for working with a personal flight log 
 > Throughout this documentation, `python` refers to the Python 3 interpreter. Different operating systems may require different commands such as `py` or `python3`.
 
 ```bash
-python flight_log.py <command> [options]
+python -m flight_log_tools <command> [options]
 ```
 
 To see available commands:
 
 ```bash
-python flight_log.py --help
+python -m flight_log_tools --help
 ```
 
 To see help for a specific command:
 
 ```bash
-python flight_log.py <command> --help
+python -m flight_log_tools <command> --help
 ```
 
 ## Commands
@@ -39,7 +39,7 @@ Typical use cases:
 Example:
 
 ```bash
-python flight_log.py import-boarding-passes
+python -m flight_log_tools import-boarding-passes
 ```
 
 ### `import-recent`
@@ -54,11 +54,11 @@ This command is intended to:
 Example:
 
 ```bash
-python flight_log.py import-recent
+python -m flight_log_tools import-recent
 ```
 
 > [!IMPORTANT]
-> This script requires a Flight Historian API key to be set as an environment variable or saved in a **.env** file:
+> This script requires a Flight Historian API key to be set as an environment variable or saved in a **.env** file in the project’s root folder:
 >
 > `API_KEY_FLIGHT_HISTORIAN=yourkey`
 

@@ -2,8 +2,7 @@
 
 import os
 import time
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
 
 import requests
 
@@ -28,7 +27,7 @@ class AeroAPIWrapper:
         url = f"{self.server}/flights/{ident}"
         self.wait()
         response = requests.get(url, headers=headers, timeout=self.timeout)
-        print(f"🌐 Requesting {response.url}")
+        print(f"🌐 GET {response.url}")
         response.raise_for_status()
         return response.json()
 
@@ -36,12 +35,20 @@ class AeroAPIWrapper:
         """Delays requests to avoid AeroAPI rate limits."""
         if self.wait_time == 0:
             return
-        now = datetime.now(tz=ZoneInfo("UTC"))
-        wait_until = now + timedelta(seconds=self.wait_time)
-        if self.wait_until is None or now >= self.wait_until:
-            self.wait_until = wait_until
+        now = datetime.now(timezone.utc)
+
+        # On the first request, initialize and proceed.
+        if self.wait_until is None:
+            self.wait_until = now + timedelta(seconds=self.wait_time)
             return
-        self.wait_until = wait_until
-        print(f"⏳ Waiting until {self.wait_until}")
-        while datetime.now(tz=ZoneInfo("UTC")) < self.wait_until:
-            time.sleep(1)
+
+        # If we're early, wait.
+        if now < self.wait_until:
+            sleep_seconds = (self.wait_until - now).total_seconds()
+            print(f"⏳ Waiting until {self.wait_until}")
+            time.sleep(sleep_seconds)
+
+        # Schedule the next wait.
+        self.wait_until = datetime.now(timezone.utc) + timedelta(
+            seconds=self.wait_time
+        )

@@ -19,8 +19,8 @@ def import_recent():
         )
     headers = {"api-key": api_key_fh}
     url = "https://www.flighthistorian.com/api/recent_flights"
-    print(f"🌐 Requesting {url}")
     response = requests.get(url, headers=headers, timeout=10)
+    print(f"🌐 GET {response.url}")
     response.raise_for_status()
     fh_recent_flights = response.json()
     if len(fh_recent_flights) == 0:

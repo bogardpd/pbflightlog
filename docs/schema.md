@@ -11,6 +11,8 @@ These scripts use a [GeoPackage file](https://www.geopackage.org/) containing fl
 
 The `flights` table contains records of individual flights.
 
+Individual flights may or may not have geometry (e.g., older flights without known tracks).
+
 | Column | Data Type | Description |
 |--------|-----------|-------------|
 | `fid`  | INT (64 bit) | Primary key for the flight record. |

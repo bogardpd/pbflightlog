@@ -18,6 +18,10 @@ python -m pip install -e .
 
 ### Environment Variables
 
+This script interacts with a GeoPackage flight log database as described in the [schema](docs/schema.md). The path to this file must be set as an environment variable:
+
+```FLIGHT_LOG_GEOPACKAGE_PATH=/path/to/flight_log.gpkg```
+
 Many of these scripts interact with [AeroAPI](https://www.flightaware.com/commercial/aeroapi/) to get flight data. You will need to get an AeroAPI API key and set it as an environment variable:
 
 ```AEROAPI_API_KEY=yourkey```
@@ -80,8 +84,3 @@ Example:
 ```bash
 python -m flight_log_tools import-recent
 ```
-
-## Data model notes
-
-* The flight log is stored as a GeoPackage, as described in the [schema](docs/schema.md).
-* Individual flights may or may not have geometry (e.g., older flights without known tracks).

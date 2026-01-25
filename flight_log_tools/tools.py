@@ -52,4 +52,5 @@ def import_recent():
         if flight['fh_id'] in current_fh_ids:
             print("This flight is already in the log.")
             continue
-        aw.add_flight(flight['fa_flight_id'])
+        fields = {'fh_id': flight['fh_id']}
+        aw.add_flight(flight['fa_flight_id'], fields=fields)

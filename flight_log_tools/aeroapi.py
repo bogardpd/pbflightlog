@@ -31,7 +31,7 @@ class AeroAPIWrapper:
         self.wait_time = 8
         self.wait_until = None
 
-    def add_flight(self, ident):
+    def add_flight(self, ident, fields=None):
         """Gets flight info for an ident and saves flight(s) to log."""
         headers = {'x-apikey': self.api_key}
         url = f"{self.server}/flights/{ident}"
@@ -79,7 +79,7 @@ class AeroAPIWrapper:
             geom_mls = AeroAPIWrapper.split_antimeridian(track_ls)
             track_dist_mi = int(track_json['actual_distance'])
 
-        # Create record
+        # Create record.
         record = {
             'geometry': geom_mls,
             'departure_utc': self.__dep_utc(flight),
@@ -91,7 +91,15 @@ class AeroAPIWrapper:
             'fa_json': json.dumps(flight),
             'geom_source': "FlightAware",
             'distance_mi': track_dist_mi,
+            'comments': None,
         }
+
+        # Add supplied field values.
+        if fields is not None:
+            for k, v in fields.items():
+                record[k] = v
+
+        # Append flight.
         gdf = gpd.GeoDataFrame([record], geometry='geometry', crs="EPSG:4326")
         fl.append_flights(gdf)
 

@@ -88,13 +88,15 @@ class AeroAPIWrapper:
             'geometry': geom_mls,
             'departure_utc': self.__dep_utc(flight),
             'arrival_utc': self.__arr_utc(flight),
-            'fa_flight_id': flight['fa_flight_id'],
+            'flight_number': flight['flight_number'],
             'origin_airport_fid': fl.find_airport_fid(
                 flight['origin']['code']
             ),
             'destination_airport_fid': fl.find_airport_fid(
                 flight['destination']['code']
             ),
+            'operator_fid': fl.find_airline_fid(flight['operator']),
+            'fa_flight_id': flight['fa_flight_id'],
             'fa_json': json.dumps(flight),
             'geom_source': "FlightAware",
             'distance_mi': track_dist_mi,

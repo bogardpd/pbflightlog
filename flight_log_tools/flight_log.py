@@ -67,6 +67,43 @@ def append_flights(record_gdf):
         f"Appended {len(record_gdf)} flights(s) to '{layer}' in {flight_log}."
     )
 
+def find_airline_fid(code):
+    """Finds an airline fid by ICAO or IATA code."""
+    layer = "airlines"
+    airlines = gpd.read_file(
+        flight_log,
+        layer=layer,
+        engine="pyogrio",
+        fid_as_index=True
+    )
+    # Filter out defunct airlines. This is helpful in situations where
+    # current airlines use the same codes as an old airline (for
+    # example, the current PSA airlines and the defunct Comair both use
+    # the IATA code 'OH'.)
+    airlines = airlines[~airlines['is_defunct']]
+
+    for code_type in ['icao_code', 'iata_code']:
+        # Search for matching codes.
+        matching_code = airlines[airlines[code_type] == code]
+        if len(matching_code) == 1:
+            return matching_code.index[0]
+        if len(matching_code) > 1:
+            print(
+                colorama.Fore.YELLOW
+                + f"'{code}' matches more than one airline. Setting value to "
+                + "null."
+                + colorama.Style.RESET_ALL,
+            )
+            return None
+
+    # No matches were found.
+    print(
+        colorama.Fore.YELLOW
+        + f"'{code}' did not match any airline. Setting value to null."
+        + colorama.Style.RESET_ALL,
+    )
+    return None
+
 def find_airport_fid(code):
     """Finds an airport fid by ICAO or IATA code."""
     layer = "airports"
@@ -79,7 +116,7 @@ def find_airport_fid(code):
     # Filter out defunct airports. This is helpful in situations where
     # current airports use the same codes as an old airport (for
     # example, the modern Denver airport and the old Denver Stapleton
-    # both use KDEN/DEN.)
+    # both use 'KDEN'/'DEN'.)
     airports = airports[~airports['is_defunct']]
 
     for code_type in ['icao_code', 'iata_code']:

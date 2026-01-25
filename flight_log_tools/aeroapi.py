@@ -85,7 +85,6 @@ class AeroAPIWrapper:
             'departure_utc': self.__dep_utc(flight),
             'arrival_utc': self.__arr_utc(flight),
             'fa_flight_id': flight['fa_flight_id'],
-            'identifier': flight['ident'],
             'origin_airport_fid': fl.find_airport_fid(
                 flight['origin']['code']
             ),

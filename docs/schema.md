@@ -55,7 +55,6 @@ Individual flights may or may not have geometry (e.g., older flights without kno
 | Column | Data Type | Description |
 |--------|-----------|-------------|
 | `fid`  | INT (64 bit) | Primary key for the flight record. |
-| `identifier` | TEXT | *Optional.* Identifier string for the flight (e.g. `AAL1234`).
 | `departure_utc` | DATETIME | UTC departure time for the flight. Prefer gate out time over wheels off (up) time. Prefer actual time over estimated time over scheduled time. |
 | `arrival_utc` | DATETIME | *Optional.* UTC arrival time for the flight. Prefer gate in time over wheels on (down) time. Prefer actual time over estimated time over scheduled time. |
 | `airline_fid` | INT (64 bit) | Foreign key referencing the marketing airline on the `airlines` table. (See [Airline Types](#airline-types).) |

@@ -60,6 +60,17 @@ class AeroAPIWrapper:
         # is the actual flight as shown.
         flight = [f for f in flights if f['status'] != "Diverted"][0]
 
+        # Check that flight is completed.
+        progress = flight['progress_percent']
+        if progress is None or progress != 100:
+            print(
+                colorama.Fore.YELLOW
+                + f"{ident} is not 100% complete (complete: {progress}%). "
+                + "Flight was not added to log."
+                + colorama.Style.RESET_ALL
+            )
+            return
+
         # Get geometry:
         track_json = self.get_geometry(flight['fa_flight_id'])
         if track_json is None:

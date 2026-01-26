@@ -106,6 +106,9 @@ class AeroAPIWrapper:
             'destination_airport_fid': fl.find_airport_fid(
                 flight['destination']['code']
             ),
+            'aircraft_type_fid': fl.find_aircraft_type_fid(
+                flight['aircraft_type']
+            ),
             'operator_fid': fl.find_airline_fid(flight['operator']),
             'fa_flight_id': flight['fa_flight_id'],
             'fa_json': json.dumps(flight),

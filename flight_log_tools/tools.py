@@ -6,6 +6,7 @@ import requests
 import geopandas as gpd
 
 from flight_log_tools.aeroapi import AeroAPIWrapper
+from flight_log_tools.boarding_pass import BoardingPass
 
 def add_fa_flight_id(ident):
     """Gets flight info for an ident and saves flight(s) to log."""
@@ -54,3 +55,8 @@ def import_recent():
             continue
         fields = {'fh_id': flight['fh_id']}
         aw.add_flight(flight['fa_flight_id'], fields=fields)
+
+def parse_bcbp(bcbp_str):
+    """Parses a Bar-Coded Boarding Pass string."""
+    bp = BoardingPass(bcbp_str)
+    print(bp)

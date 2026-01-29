@@ -3,104 +3,104 @@
 _BCBP_FIELDS = {
     "mandatory_unique": [
         # 1. Format Code
-        {'num': 1, 'length': 1},
+        {'key': 'format_code', 'length': 1},
         # 5. Number of Legs Encoded
-        {'num': 5, 'length': 1},
+        {'key': 'leg_count', 'length': 1},
         # 11. Passenger Name
-        {'num': 11, 'length': 20},
+        {'key': 'passenger_name', 'length': 20},
         # 253. Electronic Ticket Indicator
-        {'num': 253, 'length': 1},
+        {'key': 'electronic_ticket', 'length': 1},
     ],
     "mandatory_repeated": [
          # 7. Operating carrier PNR Code
-        {'num': 7, 'length': 7},
+        {'key': 'pnr', 'length': 7},
         # 26. From City Airport Code
-        {'num': 26, 'length': 3},
+        {'key': 'from_airport', 'length': 3},
         # 38. To City Airport Code
-        {'num': 38, 'length': 3},
-        # 42. Operating carrier Designator
-        {'num': 42, 'length': 3},
+        {'key': 'to_airport', 'length': 3},
+        # 42. Operating Carrier Designator
+        {'key': 'operating_carrier', 'length': 3},
         # 43. Flight Number
-        {'num': 43, 'length': 5},
+        {'key': 'flight_number', 'length': 5},
         # 46. Date of Flight (Julian Date)
-        {'num': 46, 'length': 3},
+        {'key': 'flight_date', 'length': 3},
         # 71. Compartment Code
-        {'num': 71, 'length': 1},
+        {'key': 'compartment_code', 'length': 1},
         # 104. Seat Number
-        {'num': 104, 'length': 4},
+        {'key': 'seat_number', 'length': 4},
         # 107. Check-in Sequence Number
-        {'num': 107, 'length': 5},
+        {'key': 'check_in_sequence', 'length': 5},
         # 113. Passenger Status
-        {'num': 113, 'length': 1},
+        {'key': 'passenger_status', 'length': 1},
         # 6. Field size of variable size field (Conditional + Airline
         # item 4) in hexadecimal
-        {'num': 6, 'length': 2},
+        {'key': 'conditional_airline_length', 'length': 2},
     ],
     "conditional_unique": [
         # 8. Beginning of Version Number
-        {'num': 8, 'length': 1},
+        {'key': 'version_number_begin', 'length': 1},
         # 9. Version Number
-        {'num': 9, 'length': 1},
+        {'key': 'version_number', 'length': 1},
         # 10. Field Size of Following Structured Message - Unique
-        {'num': 10, 'length': 2},
+        {'key': 'following_unique_length', 'length': 2},
         # 15. Passenger Description
-        {'num': 15, 'length': 1},
+        {'key': 'passenger_description', 'length': 1},
         # 12. Source of Check-in
-        {'num': 12, 'length': 1},
+        {'key': 'check_in_source', 'length': 1},
         # 14. Source of Boarding Pass Issuance
-        {'num': 14, 'length': 1},
+        {'key': 'boarding_pass_source', 'length': 1},
         # 22. Date of Issue of Boarding Pass (Julian Date)
-        {'num': 22, 'length': 4},
+        {'key': 'boarding_pass_date', 'length': 4},
         # 16. Document type
-        {'num': 16, 'length': 1},
+        {'key': 'document_type', 'length': 1},
         # 21. Airline Designator of Boarding Pass Issuer
-        {'num': 21, 'length': 3},
+        {'key': 'boarding_pass_issuer_airline', 'length': 3},
         # 23. Baggage Tag License Plate Number
-        {'num': 23, 'length': 13},
+        {'key': 'baggage_tag_number', 'length': 13},
         # 31. 1st Non-Consecutive Baggage Tag License Plate
         # Number
-        {'num': 31, 'length': 13},
+        {'key': 'baggage_tag_number_nonconsecutive_1', 'length': 13},
         # 31. 2nd Non-Consecutive Baggage Tag License Plate
         # Number
-        {'num': 32, 'length': 13},
+        {'key': 'baggage_tag_number_nonconsecutive_2', 'length': 13},
     ],
     "conditional_repeated": [
         # 17. Field Size of Following Structured Message - Repeated
-        {'num': 17, 'length': 2},
+        {'key': 'following_repeated_length', 'length': 2},
         # 142. Airline Numeric Code
-        {'num': 142, 'length': 3},
+        {'key': 'airline_numeric_code', 'length': 3},
         # 143. Document Form/Serial Number
-        {'num': 143, 'length': 10},
+        {'key': 'document_form_serial_number', 'length': 10},
         # 18. Selectee Indicator
-        {'num': 18, 'length': 1},
+        {'key': 'selectee_indicator', 'length': 1},
         # 108. International Documentation Verification
-        {'num': 108, 'length': 1},
+        {'key': 'international_doc_verification', 'length': 1},
         # 19. Marketing Carrier Designator
-        {'num': 19, 'length': 3},
+        {'key': 'marketing_carrier', 'length': 3},
         # 20. Frequent Flier Airline Designator
-        {'num': 20, 'length': 3},
+        {'key': 'frequent_flier_airline', 'length': 3},
         # 236. Frequent Flier Number
-        {'num': 236, 'length': 16},
+        {'key': 'frequent_flier_number', 'length': 16},
         # 89. ID/AD Indicator
-        {'num': 89, 'length': 1},
+        {'key': 'id_ad', 'length': 1},
         # 118. Free Baggage Allowance
-        {'num': 118, 'length': 3},
+        {'key': 'free_baggage_allowance', 'length': 3},
         # 254. Fast Track
-        {'num': 254, 'length': 1},
+        {'key': 'fast_track', 'length': 1},
     ],
     "airline_repeated": [
         # 4. For Individual Airline Use (variable length)
-        {'num': 4, 'length': None},
+        {'key': 'individual_airline_use', 'length': None},
     ],
     "security": [
         # 25. Beginning of Security Data
-        {'num': 25, 'length': 1},
+        {'key': 'security_data_begin', 'length': 1},
         # 28. Type of Security Data
-        {'num': 28, 'length': 1},
+        {'key': 'security_data_type', 'length': 1},
         # 29. Length of Security Data
-        {'num': 29, 'length': 2},
+        {'key': 'security_data_length', 'length': 2},
         # 30. Security Data (variable length)
-        {'num': 30, 'length': None}
+        {'key': 'security_data', 'length': None}
     ]
 }
 
@@ -109,7 +109,7 @@ class BoardingPass():
     def __init__(self, bcbp_str):
         self.bcbp_str = bcbp_str
         self.data_len = len(self.bcbp_str)
-        self.data = self.__parse()
+        self.raw = self.__parse()
 
     def __str__(self):
         return self.bcbp_str.replace(" ", "·")
@@ -123,7 +123,7 @@ class BoardingPass():
         mand_u_parse = self.__parse_mand_u()
         mand_u = mand_u_parse['data']
         try:
-            self.leg_count = int(mand_u[5])
+            self.leg_count = int(mand_u['leg_count'])
         except ValueError:
             return None
         # Set offset to end of mand_u block.
@@ -140,7 +140,9 @@ class BoardingPass():
             mand_r = mand_r_parse['data']
             leg_data['mandatory'] = mand_r
             try:
-                cond_air_len = int(mand_r[6], 16)
+                cond_air_len = int(
+                    mand_r['conditional_airline_length'], 16
+                )
             except ValueError:
                 return None
             # Set cursor to end of this leg's mand_r block.
@@ -189,6 +191,8 @@ class BoardingPass():
             return None
         if cursor < self.data_len:
             security_parse = self.__parse_security(cursor)
+            if security_parse is None:
+                return None
             security = security_parse['data']
             # Set cursor to end of security.
             cursor += security_parse['length']
@@ -219,7 +223,7 @@ class BoardingPass():
         for i, f in enumerate(fields):
             start = sum(lengths[0:i])
             stop = start + f['length']
-            mand_u[f['num']] = raw[start:stop]
+            mand_u[f['key']] = raw[start:stop]
         return {'length': sum(lengths), 'data': mand_u}
 
     def __parse_mand_r(self, offset):
@@ -231,7 +235,7 @@ class BoardingPass():
         for i, f in enumerate(fields):
             start = offset + sum(lengths[0:i])
             stop = start + f['length']
-            mand_r[f['num']] = raw[start:stop]
+            mand_r[f['key']] = raw[start:stop]
         return {'length': sum(lengths), 'data': mand_r}
 
     def __parse_cond_u(self, offset):
@@ -239,7 +243,7 @@ class BoardingPass():
         return self.__parse_cond(
             offset,
             _BCBP_FIELDS['conditional_unique'],
-            10, # Field Size of Following Structured Message - Unique
+            'following_unique_length',
         )
 
     def __parse_cond_r(self, offset):
@@ -247,7 +251,7 @@ class BoardingPass():
         return self.__parse_cond(
             offset,
             _BCBP_FIELDS['conditional_repeated'],
-            17, # Field Size of Following Structured Message - Unique
+            'following_repeated_length',
         )
 
     def __parse_cond(self, offset, fields, following_length_field_id):
@@ -255,7 +259,7 @@ class BoardingPass():
         Parses a conditional block.
 
         Conditional blocks have a field (identified by
-        following_field_length_id) indicating the length of the block
+        following_length_field_id) indicating the length of the block
         after it. Fields are populated in order until the length is
         reached.
         """
@@ -276,20 +280,22 @@ class BoardingPass():
                     # Field is longer than remaining size; truncate.
                     stop = start + remaining_size
             value_str = raw[start:stop]
-            cond[f['num']] = value_str
-            if f['num'] == following_length_field_id:
+            cond[f['key']] = value_str
+            if f['key'] == following_length_field_id:
                 # Parse the following field size.
                 try:
                     fol_len = int(value_str, 16)
                     fol_offset = stop
                 except ValueError:
                     return None
+        if fol_offset is None:
+            return None
         return {'length': (fol_offset - offset) + fol_len, 'data': cond}
 
     def __parse_airline(self, offset_start, offset_end):
         """Parses airline data."""
         raw = self.bcbp_str
-        field_id = _BCBP_FIELDS['airline_repeated'][0]['num']
+        field_id = _BCBP_FIELDS['airline_repeated'][0]['key']
         return {field_id: raw[offset_start:offset_end]}
 
     def __parse_security(self, offset):
@@ -303,22 +309,22 @@ class BoardingPass():
             for i, f in enumerate(fields[0:3]):
                 start = offset + sum(lengths[0:i])
                 stop = start + f['length']
-                security[f['num']] = raw[start:stop]
+                security[f['key']] = raw[start:stop]
             # Get security data length from field 29.
             try:
-                sec_data_len = int(security[29], 16)
+                sec_data_len = int(security['security_data_length'], 16)
             except ValueError:
                 return None
             sec_offset = offset + sum(lengths)
             if sec_offset + sec_data_len > self.data_len:
                 sec_data_len = self.data_len - sec_offset
-            security[fields[-1]['num']] = raw[
+            security[fields[-1]['key']] = raw[
                 sec_offset:sec_offset+sec_data_len
             ]
             length = (sec_offset - offset) + sec_data_len
         else:
             # Improperly formatted security data. Treat the rest of the
             # boarding pass as security data.
-            security[fields[-1]['num']] = raw[offset:self.data_len]
+            security[fields[-1]['key']] = raw[offset:self.data_len]
             length = self.data_len - offset
         return {'length': length, 'data': security}

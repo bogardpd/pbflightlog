@@ -59,4 +59,4 @@ def import_recent():
 def parse_bcbp(bcbp_str):
     """Parses a Bar-Coded Boarding Pass string."""
     bp = BoardingPass(bcbp_str)
-    print(bp.data)
+    print(bp.raw)

@@ -200,7 +200,7 @@ class BoardingPass():
         # LEFTOVER UNKNOWN DATA
         unknown = None
         if cursor < self.data_len:
-            unknown = {0: self.bcbp_str[cursor:self.data_len]}
+            unknown = {'unknown': self.bcbp_str[cursor:self.data_len]}
 
         # Build fields dict.
         fields = {}

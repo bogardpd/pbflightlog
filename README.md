@@ -58,12 +58,17 @@ python -m flight_log_tools <command> --help
 
 ### `add-fa-flight-id`
 
-Looks up a flight by `fa_flight_id` on AeroAPI and adds it to the flight log.
+Looks up a flight on AeroAPI by `fa_flight_id` and adds it to the flight log.
+
+Usage:
+```bash
+python -m flight_log_tools add-fa-flight-id <fa-flight-id>
+```
 
 Example:
 
 ```bash
-python -m flight_log_tools fa_flight_id UAL1234-1234567890-airline-0123
+python -m flight_log_tools add-fa-flight-id UAL1234-1234567890-airline-0123
 ```
 
 ### `import-boarding-passes`
@@ -74,7 +79,7 @@ Typical use cases:
 
 * Processing saved Apple Wallet .pkpass boarding passes
 
-Example:
+Usage:
 
 ```bash
 python -m flight_log_tools import-boarding-passes
@@ -89,8 +94,29 @@ This command is intended to:
 * Pull newly completed flights
 * Avoid re-importing flights that already exist in the log
 
-Example:
+Usage:
 
 ```bash
 python -m flight_log_tools import-recent
 ```
+
+### `parse-bcbp`
+
+Parses a string coded in the IATA Bar-Coded Boarding Pass (BCBP) format.
+
+> [!TIP]
+> You can get this string by scanning the 2-D barcode on a boarding pass with a barcode reader app.
+
+Usage:
+```bash
+python -m flight_log_tools parse-bcbp <bcbp-text>
+```
+
+Example:
+```bash
+python -m flight_log_tools parse-bcbp "M1DOE/JOHN            EABC123 BOSJFKB6 0717 345P014C0010 147>3180 M6344BB6              29279          0 B6 B6 1234567890          ^108abcdefgh"
+```
+
+> [!IMPORTANT]
+> Since BCBP data contains spaces, be sure to place the BCBP string in quotes.
+>

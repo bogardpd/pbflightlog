@@ -58,6 +58,7 @@ The `airports` table contains records of airports that `flights` have used.
 | `country` | TEXT | The country the airport is located in, in ISO 3166-1 alpha-2 format (e.g. `US`). |
 | `icao_code` | TEXT | *Optional.* ICAO code for the airport (e.g. `KATL`). |
 | `iata_code` | TEXT | *Optional.* IATA code for the airport (e.g. `ATL`). |
+| `faa_lid` | TEXT | *Optional.* FAA location identifier for the airport (e.g. `ATL`, `I73`). |
 | `time_zone` | TEXT | IANA (tz) time zone for the airport (e.g. `America/New_York`). |
 | `is_defunct` | BOOLEAN | True if an airport is no longer in use, false otherwise. When looking up airports, defunct airports will be ignored. This is helpful in situations where current airports use the same codes as an old airport (for example, the modern Denver airport and the old Denver Stapleton both use `KDEN`/`DEN`.) |
 

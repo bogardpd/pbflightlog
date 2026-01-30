@@ -111,6 +111,7 @@ class BoardingPass():
         self.data_len = len(self.bcbp_str)
         self.raw = {}
         self.valid = True
+        self.version_number = None
         self.__parse()
 
     def __str__(self):
@@ -160,6 +161,10 @@ class BoardingPass():
                 cond_u_len = self.__parse_cond_u(cursor)
                 if cond_u_len is None:
                     return
+                try:
+                    self.version_number = int(self.raw['version_number'])
+                except ValueError:
+                    self.valid = False
                 cursor += cond_u_len
                 if cond_air_len == cond_u_len:
                     # No repeated conditional or airline items
@@ -189,12 +194,13 @@ class BoardingPass():
             return None
 
         # SECURITY
-        if cursor < self.data_len:
-            security_len = self.__parse_security(cursor)
-            if security_len is None:
-                return None
-            # Set cursor to end of security.
-            cursor += security_len
+        if self.version_number is not None and self.version_number >= 3:
+            if cursor < self.data_len:
+                security_len = self.__parse_security(cursor)
+                if security_len is None:
+                    return None
+                # Set cursor to end of security.
+                cursor += security_len
 
         # LEFTOVER UNKNOWN DATA
         if cursor < self.data_len:
@@ -236,7 +242,7 @@ class BoardingPass():
         """Parses a conditional unique block starting at offset."""
         return self.__parse_cond(
             offset,
-            0, # Conditional unique is only included in the first leg
+            None, # Store unique outside of a leg
             _BCBP_FIELDS['conditional_unique'],
             'following_unique_length',
         )
@@ -278,7 +284,10 @@ class BoardingPass():
                     stop = start + remaining_size
             value_str = raw[start:stop]
             cond[f['key']] = value_str
-            self.raw['legs'][leg_index][f['key']] = value_str
+            if leg_index is None:
+                self.raw[f['key']] = value_str
+            else:
+                self.raw['legs'][leg_index][f['key']] = value_str
             if f['key'] == following_length_key:
                 # Parse the following field size.
                 try:

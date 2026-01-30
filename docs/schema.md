@@ -54,7 +54,7 @@ The `airports` table contains records of airports that `flights` have used.
 | Column | Data Type | Description |
 |--------|-----------|-------------|
 | `fid` | INT (64 bit) | Primary key for the airport record. |
-| `city` | TEXT | The primary city or region the airport serves (e.g. `Atlanta`, `Dallas/Fort Worth`). If this is ambiguous, include the airport name in parentheses (e.g. `Chicago (O’Hare)`, `Chicago (Midway)`). |
+| `name` | TEXT | The name of the airport. For commercial airports, use the name that would show up on a flight board, which is typically the primary city or region the airport serves (e.g. `Atlanta`, `Dallas/Fort Worth`). If this is ambiguous, include the airport name in parentheses (e.g. `Chicago (O’Hare)`, `Chicago (Midway)`). |
 | `country` | TEXT | The country the airport is located in, in ISO 3166-1 alpha-2 format (e.g. `US`). |
 | `icao_code` | TEXT | *Optional.* ICAO code for the airport (e.g. `KATL`). |
 | `iata_code` | TEXT | *Optional.* IATA code for the airport (e.g. `ATL`). |

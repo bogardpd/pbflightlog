@@ -84,6 +84,7 @@ Individual flights may or may not have geometry (e.g., older flights without kno
 | `fid`  | INT (64 bit) | Primary key for the flight record. |
 | `departure_utc` | DATETIME | UTC departure time for the flight. Prefer gate out time over wheels off (up) time. Prefer actual time over estimated time over scheduled time. |
 | `arrival_utc` | DATETIME | *Optional.* UTC arrival time for the flight. Prefer gate in time over wheels on (down) time. Prefer actual time over estimated time over scheduled time. |
+| `purpose` | TEXT | `Business`, `Personal`, or `Mixed` |
 | `airline_fid` | INT (64 bit) | Foreign key referencing the marketing airline on the [`airlines`](#airlines-no-geometry) table. (See [Airline Types](#airline-types).) |
 | `flight_number` | TEXT | The marketing airline's flight number for the flight. (See [Airline Types](#airline-types).) |
 | `origin_airport_fid` | INT (64 bit) | Foreign key referencing the origin airport on the [`airports`](#airports-point) table. |

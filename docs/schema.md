@@ -62,6 +62,17 @@ The `airports` table contains records of airports that `flights` have used.
 | `time_zone` | TEXT | IANA (tz) time zone for the airport (e.g. `America/New_York`). |
 | `is_defunct` | BOOLEAN | True if an airport is no longer in use, false otherwise. When looking up airports, defunct airports will be ignored. This is helpful in situations where current airports use the same codes as an old airport (for example, the modern Denver airport and the old Denver Stapleton both use `KDEN`/`DEN`.) |
 
+### Classes (No Geometry)
+
+The `classes` table contains definition of travel classes such as Economy and First.
+
+| Column | Data Type | Description |
+|--------|-----------|-------------|
+| `fid` | INT (64 bit) | Primary key for the class record. |
+| `quality` | INT (64 bit) | Quality order of the class, with `1` as the lowest and higher being better. |
+| `name` | TEXT | Name of the class (e.g. `Economy`) |
+| `description` | TEXT | Description of the class (e.g. `Standard main cabin seat`) |
+
 ### flights (MultiLineStringZ)
 
 The `flights` table contains records of individual flights.
@@ -79,6 +90,7 @@ Individual flights may or may not have geometry (e.g., older flights without kno
 | `destination_airport_fid` | INT (64 bit) | Foreign key referencing the destination airport on the [`airports`](#airports-point) table. |
 | `aircraft_type_fid` | INT (64 bit) | Foreign key referencing the aircraft type on the [`aircraft_types`](#aircraft_types-no-geometry) table. |
 | `tail_number` | TEXT | *Optional.* The tail number of the aircraft operating the flight (e.g. `N909EV`). |
+| `class_fid` | INT (64 bit) | Foreign key referencing the travel class on the [`classes`](#classes-no-geometry) table. |
 | `operator_fid` | INT (64 bit) | Foreign key referencing the marketing airline on the [`airlines`](#airlines-no-geometry) table. May or may not be the same as the `airline_fid`. (See [Airline Types](#airline-types).) |
 | `codeshare_airline_fid` | INT (64 bit) | *Optional.* Foreign key referencing the codeshare airline on the [`airlines`](#airlines-no-geometry) table. (See [Airline Types](#airline-types).) |
 | `codeshare_flight_number` | TEXT | *Optional.* The codeshare airline's flight number for the flight. (See [Airline Types](#airline-types).) |

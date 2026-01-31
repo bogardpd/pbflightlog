@@ -107,6 +107,7 @@ class AeroAPIWrapper:
                 flight['aircraft_type']
             ),
             'operator_fid': fl.find_airline_fid(flight['operator']),
+            'tail_number': flight['registration'],
             'fa_flight_id': flight['fa_flight_id'],
             'fa_json': json.dumps(flight),
             'geom_source': "FlightAware",

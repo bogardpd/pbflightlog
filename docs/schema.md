@@ -78,6 +78,7 @@ Individual flights may or may not have geometry (e.g., older flights without kno
 | `origin_airport_fid` | INT (64 bit) | Foreign key referencing the origin airport on the [`airports`](#airports-point) table. |
 | `destination_airport_fid` | INT (64 bit) | Foreign key referencing the destination airport on the [`airports`](#airports-point) table. |
 | `aircraft_type_fid` | INT (64 bit) | Foreign key referencing the aircraft type on the [`aircraft_types`](#aircraft_types-no-geometry) table. |
+| `tail_number` | TEXT | *Optional.* The tail number of the aircraft operating the flight (e.g. `N909EV`). |
 | `operator_fid` | INT (64 bit) | Foreign key referencing the marketing airline on the [`airlines`](#airlines-no-geometry) table. May or may not be the same as the `airline_fid`. (See [Airline Types](#airline-types).) |
 | `codeshare_airline_fid` | INT (64 bit) | *Optional.* Foreign key referencing the codeshare airline on the [`airlines`](#airlines-no-geometry) table. (See [Airline Types](#airline-types).) |
 | `codeshare_flight_number` | TEXT | *Optional.* The codeshare airline's flight number for the flight. (See [Airline Types](#airline-types).) |

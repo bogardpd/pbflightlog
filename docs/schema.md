@@ -107,7 +107,15 @@ Individual flights may or may not have geometry (e.g., older flights without kno
 
 ### routes (MultiLineString)
 
-The `routes` table contains great circle geometry for routes between pairs of [`airports`](#airports-point).
+The `routes` table contains great circle geometry for routes between pairs of airports.
 
 > [!WARNING]
 > The routes table is automatically generated and updated. (An update can be forced with the [`update-routes`](../README.md#update-routes) command.) Do not manually edit the routes table, as any edits will be lost when routes are updated.
+
+| Column | Data Type | Description |
+|--------|-----------|-------------|
+| `fid`  | INT (64 bit) | Primary key for the route record. |
+| `origin_airport_fid` | INT (64 bit) | Foreign key referencing the origin airport on the [`airports`](#airports-point) table. |
+| `destination_airport_fid` | INT (64 bit) | Foreign key referencing the destination airport on the [`airports`](#airports-point) table. |
+| `flight_count` | INT (64 bit) | Number of flights flown in this direction of this route. |
+| `distance_mi` | INT (64 bit) | Geodesic distance of this route in miles. |

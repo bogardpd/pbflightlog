@@ -4,6 +4,7 @@
 import os
 import sqlite3
 from math import ceil
+from datetime import datetime
 
 # Third-party imports
 import colorama
@@ -22,6 +23,23 @@ if flight_log is None:
     raise KeyError(
         "Environment variable FLIGHT_LOG_GEOPACKAGE_PATH is missing."
     )
+
+class Flight():
+    """Represents a flight record."""
+    def __init__(self):
+        self.geometry: MultiLineString | None = None
+        self.departure_utc: datetime | None = None
+        self.arrival_utc: datetime | None = None
+        self.flight_number: str | None = None
+        self.origin_airport_fid: int | None = None
+        self.destination_airport_fid: int | None = None
+        self.aircraft_type_fid: int | None = None
+        self.operator_fid: int | None = None
+        self.tail_number: str | None = None
+        self.fa_flight_id: str | None = None
+        self.fa_json: str | None = None
+        self.geom_source: str | None = None
+        self.distance_mi: int | None = None
 
 def append_flights(record_gdf):
     """Appends a GeoDataFrame of records to flights."""

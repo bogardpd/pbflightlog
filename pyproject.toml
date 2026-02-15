@@ -1,6 +1,16 @@
 [project]
 name = "flight-log-tools"
 version = "0.0.0"
+description = "Tools for maintaining a personal GeoPackage flight log"
+readme = "README.md"
+requires-python = ">=3.14"
+license = "MIT"
+dependencies = [
+    "colorama",
+    "geopandas>=1.1.2",
+    "pyproj>=3.7.0",
+    "shapely>=2.1.0",
+]
 
 [build-system]
 requires = ["setuptools"]

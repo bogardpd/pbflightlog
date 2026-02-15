@@ -61,7 +61,10 @@ def add_flight_number(airline, flight_number):
             selected_flight = flights[row_index]
         except IndexError, ValueError:
             print("Invalid row selection.")
-    print(selected_flight)
+
+    flight = fl.Flight()
+    flight.load_aeroapi(selected_flight)
+    print(flight.gdf().iloc[0])
 
 
 def import_boarding_passes():

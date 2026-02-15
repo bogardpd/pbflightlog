@@ -1,6 +1,7 @@
 """Scripts for interacting with the flight log."""
 
 # Standard imports
+import json
 import os
 import sqlite3
 from math import ceil
@@ -10,11 +11,14 @@ from datetime import datetime
 import colorama
 import geopandas as gpd
 import pandas as pd
+from dateutil.parser import isoparse
 from pyproj import Geod
 from shapely.geometry import Point, LineString, MultiLineString
 
 METERS_PER_MILE = 1609.344
 METERS_BETWEEN_GC_POINTS = 100000
+
+CRS = "EPSG:4326" # WGS-84
 
 colorama.init()
 
@@ -30,6 +34,7 @@ class Flight():
         self.geometry: MultiLineString | None = None
         self.departure_utc: datetime | None = None
         self.arrival_utc: datetime | None = None
+        self.airline_fid: int | None = None
         self.flight_number: str | None = None
         self.origin_airport_fid: int | None = None
         self.destination_airport_fid: int | None = None
@@ -37,9 +42,68 @@ class Flight():
         self.operator_fid: int | None = None
         self.tail_number: str | None = None
         self.fa_flight_id: str | None = None
-        self.fa_json: str | None = None
+        self.fa_json: dict | None = None
         self.geom_source: str | None = None
         self.distance_mi: int | None = None
+
+    def gdf(self) -> gpd.GeoDataFrame:
+        """Returns a GeoDataFrame record for the flight."""
+        record = {
+            'geometry': self.geometry,
+            'departure_utc': _format_time(self.departure_utc),
+            'arrival_utc': _format_time(self.arrival_utc),
+            'flight_number': self.flight_number,
+            'origin_airport_fid': self.origin_airport_fid,
+            'destination_airport_fid': self.destination_airport_fid,
+            'aircraft_type_fid': self.aircraft_type_fid,
+            'operator_fid': self.operator_fid,
+            'tail_number': self.tail_number,
+            'fa_flight_id': self.fa_flight_id,
+            'fa_json': (
+                None if self.fa_json is None else json.dumps(self.fa_json)
+            ),
+            'geom_source': self.geom_source,
+            'distance_mi': self.distance_mi,
+            'comments': None,
+        }
+        return gpd.GeoDataFrame([record], geometry='geometry', crs=CRS)
+
+    def load_aeroapi(self, fa_json: dict) -> None:
+        """Loads flight values from an AeroAPI response."""
+        self.fa_json = fa_json
+        self.departure_utc = Flight.dep_utc(fa_json)
+        self.arrival_utc = Flight.arr_utc(fa_json)
+        self.flight_number = fa_json['flight_number']
+        self.origin_airport_fid = find_airport_fid(
+            fa_json['origin']['code']
+        )
+        self.destination_airport_fid = find_airport_fid(
+            fa_json['destination']['code']
+        )
+        self.aircraft_type_fid = find_aircraft_type_fid(
+            fa_json['aircraft_type']
+        )
+        self.operator_fid = find_airline_fid(fa_json['operator'])
+        self.tail_number = fa_json['registration']
+        self.fa_flight_id = fa_json['fa_flight_id']
+
+    @classmethod
+    def arr_utc(cls, fa_json: dict) -> datetime | None:
+        """Gets the actual arrival time of a flight."""
+        if fa_json['actual_in'] is None:
+            # Flights diverted to a different airport use estimated_in.
+            if fa_json['progress_percent'] == 100:
+                return fa_json['estimated_in']
+            return None
+        return isoparse(fa_json['actual_in'])
+
+    @classmethod
+    def dep_utc(cls, flight_json: dict) -> datetime | None:
+        """Gets the actual departure time of a flight."""
+        if flight_json['actual_out'] is None:
+            return None
+        return isoparse(flight_json['actual_out'])
+
 
 def append_flights(record_gdf):
     """Appends a GeoDataFrame of records to flights."""
@@ -271,6 +335,12 @@ def update_routes():
     print(
         f"Updated all routes in {flight_log}."
     )
+
+def _format_time(time_val):
+    """Format time as ISO 8601 with Z."""
+    if time_val is None:
+        return None
+    return time_val.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def _great_circle_route(point1, point2) -> pd.Series:
     """

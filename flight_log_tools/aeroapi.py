@@ -295,8 +295,8 @@ class AeroAPIWrapper:
 
 def get_flights_ident(ident, ident_type=None):
     """Gets flights matching an ident."""
-    headers = {'x-apikey': _API_KEY}
     url = f"{SERVER}/flights/{ident}"
+    headers = {'x-apikey': _API_KEY}
     params = {'ident_type': ident_type}
     _rate_limiter.wait()
     response = requests.get(
@@ -307,5 +307,25 @@ def get_flights_ident(ident, ident_type=None):
     )
     print(f"🌐 GET {response.url}")
     response.raise_for_status()
-    json_response = response.json()
-    return json_response['flights']
+    fa_json = response.json()
+    return fa_json['flights']
+
+def get_flights_ident_track(ident):
+    """Gets the track for a specific flight."""
+    url = f"{SERVER}/flights/{ident}/track"
+    headers = {'x-apikey': _API_KEY}
+    params = {
+        'include_estimated_positions': "true",
+        'include_surface_positions': "true",
+    }
+    _rate_limiter.wait()
+    response = requests.get(
+        url,
+        headers=headers,
+        params=params,
+        timeout=_TIMEOUT,
+    )
+    print(f"🌐 GET {response.url}")
+    response.raise_for_status()
+    fa_json = response.json()
+    return fa_json

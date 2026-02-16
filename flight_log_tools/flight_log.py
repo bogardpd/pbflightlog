@@ -4,6 +4,7 @@
 import json
 import os
 import sqlite3
+import sys
 from datetime import datetime
 from math import ceil
 from typing import Self
@@ -16,7 +17,11 @@ from dateutil.parser import isoparse
 from pyproj import Geod
 from shapely.geometry import Point, LineString, MultiLineString
 
+# Project imports
+import flight_log_tools.aeroapi as aero
+
 METERS_PER_MILE = 1609.344
+METERS_PER_HUNDRED_FEET = 30.48
 METERS_BETWEEN_GC_POINTS = 100000
 
 CRS = "EPSG:4326" # WGS-84
@@ -69,10 +74,43 @@ class Flight():
         }
         return gpd.GeoDataFrame([record], geometry='geometry', crs=CRS)
 
+    def fetch_aeroapi_track_geometry(self) -> None:
+        """Gets flight track from AeroAPI"""
+        if self.fa_flight_id is None:
+            print("⚠️ Cannot get track: fa_flight_id is not set.")
+            return
+        fa_json = aero.get_flights_ident_track(self.fa_flight_id)
+        if fa_json is None:
+            print(f"⚠️ No track found for {self.fa_flight_id}.")
+            return
+        positions = fa_json.get('positions')
+        if len(positions) == 0:
+            print(f"⚠️ No positions found for {self.fa_flight_id}.")
+            return
+        track_ls = LineString([Point(
+            p.get('longitude'),
+            p.get('latitude'),
+            p.get('altitude') * METERS_PER_HUNDRED_FEET,
+        ) for p in positions])
+        self.geometry = _split_at_antimeridian(track_ls)
+        self.geom_source = "FlightAware"
+        try:
+            self.distance_mi = int(fa_json.get('actual_distance'))
+        except TypeError, ValueError:
+            print(f"⚠️ No distance found for {self.fa_flight_id}.")
+
+
     @classmethod
     def from_aeroapi(cls, fa_json: dict) -> Self:
         """Loads flight values from an AeroAPI response."""
         flight = cls()
+        progress = fa_json.get('progress_percent')
+        if progress is None or progress != 100:
+            print(
+                f"⚠️ {fa_json.get('ident')} is not 100% complete (complete: "
+                f"{progress}%). Flight was not added to log."
+            )
+            sys.exit(1)
         flight.fa_json = fa_json
         flight.departure_utc = cls.dep_utc(fa_json)
         flight.arrival_utc = cls.arr_utc(fa_json)
@@ -374,14 +412,15 @@ def _great_circle_route(point1, point2) -> pd.Series:
 
     return pd.Series([dist_mi, geom])
 
-def _split_at_antimeridian(linestring) -> MultiLineString:
+def _split_at_antimeridian(track_ls: LineString) -> MultiLineString:
     """Splits a linestring at the antimeridian (180 degrees)."""
-    points = [Point(x, y) for x, y in linestring.coords]
+    points = [Point(*coord) for coord in track_ls.coords]
     if len(points) < 2:
-        return MultiLineString(linestring)
+        return MultiLineString(track_ls)
     crossing_index = None
     crossing_lat = None
     crossing_lon = [None, None]
+    crossing_alt = None
     for i, (p1, p2) in enumerate(zip(points[:-1],points[1:])):
         if abs(p1.x - p2.x) > 180:
             crossing_index = i + 1
@@ -396,23 +435,41 @@ def _split_at_antimeridian(linestring) -> MultiLineString:
                 crossing_lon = [-180, 180]
             if total_dist == 0:
                 crossing_lat = p1.y
+                if p1.has_z:
+                    crossing_alt = p1.z
             else:
                 frac_dist = dist_to_crossing / total_dist
                 crossing_lat = p1.y + frac_dist * (p2.y - p1.y)
+                if p1.has_z:
+                    crossing_alt = p1.z + frac_dist * (p2.z - p1.z)
             break
     if crossing_index is None:
         # No crossing was found. Return a single part MultiLineString.
-        return MultiLineString([linestring])
+        return MultiLineString([track_ls])
 
     # Add crossing point to both parts of the split LineString.
-    parts = [
-        LineString([
-            *points[:crossing_index],
+    if crossing_alt is None:
+        crossing = [
             Point(crossing_lon[0], crossing_lat),
-        ]),
-        LineString([
             Point(crossing_lon[1], crossing_lat),
-            *points[crossing_index:],
-        ]),
+        ]
+    else:
+        crossing = [
+            Point(crossing_lon[0], crossing_lat, crossing_alt),
+            Point(crossing_lon[1], crossing_lat, crossing_alt),
+        ]
+
+    parts = [
+        [*points[:crossing_index], crossing[0]],
+        [crossing[1], *points[crossing_index:]],
     ]
+    # Check if we created a point that was already in the part.
+    if parts[0][-1] == parts[0][-2]:
+        parts[0] = parts[0][:-1]
+    if parts[1][0] == parts[1][1]:
+        parts[1] = parts[1][1:]
+
+    # Filter out parts with a single point and convert to LineStrings.
+    parts = [LineString(part) for part in parts if len(part) > 1]
+
     return MultiLineString(parts)

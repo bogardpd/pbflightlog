@@ -63,6 +63,7 @@ def add_flight_number(airline, flight_number):
             print("Invalid row selection.")
 
     flight = fl.Flight.from_aeroapi(selected_flight)
+    flight.fetch_aeroapi_track_geometry()
     print(flight.gdf().iloc[0])
 
 

@@ -18,7 +18,7 @@ from pyproj import Geod
 from shapely.geometry import Point, LineString, MultiLineString
 
 # Project imports
-import flight_log_tools.aeroapi as aero
+import pbflightlog.aeroapi as aero
 
 METERS_PER_MILE = 1609.344
 METERS_PER_HUNDRED_FEET = 30.48

@@ -9,10 +9,10 @@ import geopandas as gpd
 from dateutil import parser
 from tabulate import tabulate
 
-from flight_log_tools.aeroapi import AeroAPIWrapper
-import flight_log_tools.aeroapi as aero
-from flight_log_tools.boarding_pass import BoardingPass
-import flight_log_tools.flight_log as fl
+from pbflightlog.aeroapi import AeroAPIWrapper
+import pbflightlog.aeroapi as aero
+from pbflightlog.boarding_pass import BoardingPass
+import pbflightlog.flight_log as fl
 
 def add_fa_flight_id(ident):
     """Gets flight info for an ident and saves flight(s) to log."""

@@ -43,19 +43,19 @@ The [`import-recent`](#import-recent) script also requires a [Flight Historian](
 > Throughout this documentation, `python` refers to the Python 3 interpreter. Different operating systems may require different commands such as `py` or `python3`.
 
 ```bash
-python -m flight_log_tools <command> [options]
+python -m pbflightlog <command> [options]
 ```
 
 To see available commands:
 
 ```bash
-python -m flight_log_tools --help
+python -m pbflightlog --help
 ```
 
 To see help for a specific command:
 
 ```bash
-python -m flight_log_tools <command> --help
+python -m pbflightlog <command> --help
 ```
 
 ## Commands
@@ -75,7 +75,7 @@ Create a new flight (or new flights) in the flight log.
 
     **Example:**
     ```bash
-    python -m flight_log_tools add flight --bcbp "M1DOE/JOHN            EABC123 BOSJFKB6 0717 345P014C0010 147>3180 M6344BB6              29279          0 B6 B6 1234567890          ^108abcdefgh"
+    python -m pbflightlog add flight --bcbp "M1DOE/JOHN            EABC123 BOSJFKB6 0717 345P014C0010 147>3180 M6344BB6              29279          0 B6 B6 1234567890          ^108abcdefgh"
     ```
 
     Since BCBP data contains spaces, be sure to place the BCBP string in quotes. Do not trim trailing spaces from the string, as spaces have meaning in the BCBP format.
@@ -84,7 +84,7 @@ Create a new flight (or new flights) in the flight log.
 
     **Example:**
     ```bash
-    python -m flight_log_tools add flight --fa-flight-id UAL1234-1234567890-airline-0123
+    python -m pbflightlog add flight --fa-flight-id UAL1234-1234567890-airline-0123
     ```
 
 - `--number <airline_code> <flight_number>`: Look up an airline and flight number on [AeroAPI](https://www.flightaware.com/commercial/aeroapi/) and add it to the flight log.
@@ -93,14 +93,14 @@ Create a new flight (or new flights) in the flight log.
 
   **Example:**
     ```bash
-    python -m flight_log_tools add flight --number AAL 1234
+    python -m pbflightlog add flight --number AAL 1234
     ```
 
 - `--pkpasses`: Fetch all PKPass (Apple Wallet) files from the [import folder](#environment-variables) and add them to the flight log.
 
     **Example:**
     ```bash
-    python -m flight_log_tools add flight --pkpasses
+    python -m pbflightlog add flight --pkpasses
     ```
 
 - `--recent`: Add recent flights from [Flight Historian](https://www.flighthistorian.com).
@@ -109,7 +109,7 @@ Create a new flight (or new flights) in the flight log.
 
     **Example:**
     ```bash
-    python -m flight_log_tools add flight --recent
+    python -m pbflightlog add flight --recent
     ```
 
 ### `update-routes`
@@ -121,5 +121,5 @@ Updates the routes table based on all routes present in the flights table. Gener
 
 **Example:**
 ```bash
-python -m flight_log_tools update-routes
+python -m pbflightlog update-routes
 ```

@@ -11,7 +11,7 @@ import requests
 import geopandas as gpd
 from shapely.geometry import MultiLineString, LineString, Point
 
-import flight_log_tools.flight_log as fl
+import pbflightlog.flight_log as fl
 
 # Load API key.
 _API_KEY = os.getenv("AEROAPI_API_KEY")

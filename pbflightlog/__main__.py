@@ -1,7 +1,7 @@
 """Tools for interacting with a local GeoPackage flight log."""
 
 import argparse
-import flight_log_tools.tools as flt
+import pbflightlog.tools as flt
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

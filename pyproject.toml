@@ -1,5 +1,5 @@
 [project]
-name = "flight-log-tools"
+name = "pbflightlog"
 version = "0.0.0"
 description = "Tools for maintaining a personal GeoPackage flight log"
 readme = "README.md"

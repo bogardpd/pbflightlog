@@ -178,7 +178,6 @@ class Flight():
     @classmethod
     def select_flight(cls, flights: list(Self)) -> Self:
         """Asks user to choose a Flight from a list of Flights."""
-        print(len(flights))
         if len(flights) == 0:
             return None
         if len(flights) == 1:

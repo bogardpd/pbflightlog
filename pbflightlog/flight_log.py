@@ -353,7 +353,7 @@ def update_routes():
     )
 
     flights_df[['distance_mi', 'geometry']] = flights_df.apply(lambda f:
-        _great_circle_route(
+        great_circle_route(
             airports.loc[f.origin_airport_fid, 'geometry'],
             airports.loc[f.destination_airport_fid, 'geometry'],
         ),
@@ -378,8 +378,35 @@ def update_routes():
         f"Updated all routes in {flight_log}."
     )
 
+def great_circle_route(point1, point2) -> pd.Series:
+    """
+    Creates a great circle line between points.
 
-def split_at_antimeridian(track_ls: LineString):
+    Returns a Pandas series with distance in integer miles and a
+    MultiLineString geometry.
+    """
+    if point1 == point2:
+        # Returned to same airport. Return zero great circle distance
+        # and no geometry.
+        return pd.Series([0, None])
+    geod = Geod(ellps="WGS84")
+    _, _, dist_m = geod.inv(point1.x, point1.y, point2.x, point2.y)
+    dist_mi = int(round(dist_m / METERS_PER_MILE))
+
+    # Create a great circle LineString.
+    num_points = ceil(dist_m / METERS_BETWEEN_GC_POINTS) + 1
+    midpoints = geod.npts(
+        point1.x, point1.y,
+        point2.x, point2.y,
+        num_points - 2,
+    )
+    geom = split_at_antimeridian(
+        LineString([point1, *midpoints, point2])
+    )
+
+    return pd.Series([dist_mi, geom])
+
+def split_at_antimeridian(track_ls: LineString) -> MultiLineString:
     """Split a LineString at the antimeridian."""
     # Find all points where the track crosses the antimeridian.
     crossings = [
@@ -442,30 +469,3 @@ def _format_time(time_val):
         return None
     return time_val.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def _great_circle_route(point1, point2) -> pd.Series:
-    """
-    Creates a great circle line between points.
-
-    Returns a Pandas series with distance in integer miles and a
-    MultiLineString geometry.
-    """
-    if point1 == point2:
-        # Returned to same airport. Return zero great circle distance
-        # and no geometry.
-        return pd.Series([0, None])
-    geod = Geod(ellps="WGS84")
-    _, _, dist_m = geod.inv(point1.x, point1.y, point2.x, point2.y)
-    dist_mi = int(round(dist_m / METERS_PER_MILE))
-
-    # Create a great circle LineString.
-    num_points = ceil(dist_m / METERS_BETWEEN_GC_POINTS) + 1
-    midpoints = geod.npts(
-        point1.x, point1.y,
-        point2.x, point2.y,
-        num_points - 2,
-    )
-    geom = split_at_antimeridian(
-        LineString([point1, *midpoints, point2])
-    )
-
-    return pd.Series([dist_mi, geom])

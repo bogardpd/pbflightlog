@@ -10,6 +10,7 @@ from dateutil import parser
 from tabulate import tabulate
 
 from flight_log_tools.aeroapi import AeroAPIWrapper
+import flight_log_tools.aeroapi as aero
 from flight_log_tools.boarding_pass import BoardingPass
 import flight_log_tools.flight_log as fl
 
@@ -27,8 +28,7 @@ def add_flight_number(airline, flight_number):
             airline = record['icao_code']
     ident = f"{airline}{flight_number}"
     print(f"Looking up {ident}:")
-    aw = AeroAPIWrapper()
-    flights = aw.get_flights_ident(ident, "designator")
+    flights = aero.get_flights_ident(ident, "designator")
     if len(flights) == 0:
         print("No matching flights found.")
         sys.exit(0)

@@ -13,7 +13,44 @@ from shapely.geometry import MultiLineString, LineString, Point
 
 import flight_log_tools.flight_log as fl
 
+# Load API key.
+_API_KEY = os.getenv("AEROAPI_API_KEY")
+if _API_KEY is None:
+    raise KeyError("Environment variable AEROAPI_API_KEY is missing.")
+# Server info.
+SERVER = "https://aeroapi.flightaware.com/aeroapi"
+_TIMEOUT = 10
+
 colorama.init()
+
+class AeroAPIRateLimiter:
+    """Maintains state of wait time."""
+
+    def __init__(self):
+        # Set a wait time in seconds to avoid rate limiting on the
+        # Personal tier. If your account has a higher rate limit, you
+        # can set this to 0.
+        self.wait_time = 8
+        self.wait_until = datetime.now(timezone.utc)
+
+    def wait(self):
+        """Delays requests to avoid AeroAPI rate limits."""
+        if self.wait_time == 0:
+            return
+        now = datetime.now(timezone.utc)
+
+        # If we're early, wait.
+        if now < self.wait_until:
+            sleep_seconds = (self.wait_until - now).total_seconds()
+            print(f"⏳ Waiting until {self.wait_until}")
+            time.sleep(sleep_seconds)
+
+        # Schedule the next wait.
+        self.wait_until = datetime.now(timezone.utc) + timedelta(
+            seconds=self.wait_time
+        )
+
+_rate_limiter = AeroAPIRateLimiter()
 
 class AeroAPIWrapper:
     """Class for interacting with AeroAPI version 4."""
@@ -123,24 +160,6 @@ class AeroAPIWrapper:
         # Append flight.
         gdf = gpd.GeoDataFrame([record], geometry='geometry', crs="EPSG:4326")
         fl.append_flights(gdf)
-
-    def get_flights_ident(self, ident, ident_type=None):
-        """Gets flights matching an ident."""
-        headers = {'x-apikey': self.api_key}
-        url = f"{self.server}/flights/{ident}"
-        params = {'ident_type': ident_type}
-        self.wait()
-        response = requests.get(
-            url,
-            headers=headers,
-            params=params,
-            timeout=self.timeout,
-        )
-        print(f"🌐 GET {response.url}")
-        response.raise_for_status()
-        json_response = response.json()
-        return json_response['flights']
-
 
     def format_time(self, time_val):
         """Format time as ISO 8601."""
@@ -273,3 +292,20 @@ class AeroAPIWrapper:
             return None
         x_frac = (lon - p1[0]) / (p2[0] - p1[0])
         return tuple([c1 + (x_frac * (c2 - c1)) for c1, c2 in zip(p1, p2)])
+
+def get_flights_ident(ident, ident_type=None):
+    """Gets flights matching an ident."""
+    headers = {'x-apikey': _API_KEY}
+    url = f"{SERVER}/flights/{ident}"
+    params = {'ident_type': ident_type}
+    _rate_limiter.wait()
+    response = requests.get(
+        url,
+        headers=headers,
+        params=params,
+        timeout=_TIMEOUT,
+    )
+    print(f"🌐 GET {response.url}")
+    response.raise_for_status()
+    json_response = response.json()
+    return json_response['flights']

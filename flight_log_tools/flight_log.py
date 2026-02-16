@@ -4,8 +4,9 @@
 import json
 import os
 import sqlite3
-from math import ceil
 from datetime import datetime
+from math import ceil
+from typing import Self
 
 # Third-party imports
 import colorama
@@ -68,41 +69,44 @@ class Flight():
         }
         return gpd.GeoDataFrame([record], geometry='geometry', crs=CRS)
 
-    def load_aeroapi(self, fa_json: dict) -> None:
+    @classmethod
+    def from_aeroapi(cls, fa_json: dict) -> Self:
         """Loads flight values from an AeroAPI response."""
-        self.fa_json = fa_json
-        self.departure_utc = Flight.dep_utc(fa_json)
-        self.arrival_utc = Flight.arr_utc(fa_json)
-        self.flight_number = fa_json['flight_number']
-        self.origin_airport_fid = find_airport_fid(
-            fa_json['origin']['code']
+        flight = cls()
+        flight.fa_json = fa_json
+        flight.departure_utc = cls.dep_utc(fa_json)
+        flight.arrival_utc = cls.arr_utc(fa_json)
+        flight.flight_number = fa_json.get('flight_number')
+        flight.origin_airport_fid = find_airport_fid(
+            fa_json.get('origin', {}).get('code')
         )
-        self.destination_airport_fid = find_airport_fid(
-            fa_json['destination']['code']
+        flight.destination_airport_fid = find_airport_fid(
+            fa_json.get('destination', {}).get('code')
         )
-        self.aircraft_type_fid = find_aircraft_type_fid(
-            fa_json['aircraft_type']
+        flight.aircraft_type_fid = find_aircraft_type_fid(
+            fa_json.get('aircraft_type')
         )
-        self.operator_fid = find_airline_fid(fa_json['operator'])
-        self.tail_number = fa_json['registration']
-        self.fa_flight_id = fa_json['fa_flight_id']
+        flight.operator_fid = find_airline_fid(fa_json.get('operator'))
+        flight.tail_number = fa_json.get('registration')
+        flight.fa_flight_id = fa_json.get('fa_flight_id')
+        return flight
 
     @classmethod
     def arr_utc(cls, fa_json: dict) -> datetime | None:
         """Gets the actual arrival time of a flight."""
-        if fa_json['actual_in'] is None:
+        if fa_json.get('actual_in') is None:
             # Flights diverted to a different airport use estimated_in.
-            if fa_json['progress_percent'] == 100:
-                return fa_json['estimated_in']
+            if fa_json.get('progress_percent') == 100:
+                return fa_json.get('estimated_in')
             return None
-        return isoparse(fa_json['actual_in'])
+        return isoparse(fa_json.get('actual_in'))
 
     @classmethod
     def dep_utc(cls, flight_json: dict) -> datetime | None:
         """Gets the actual departure time of a flight."""
-        if flight_json['actual_out'] is None:
+        if flight_json.get('actual_out') is None:
             return None
-        return isoparse(flight_json['actual_out'])
+        return isoparse(flight_json.get('actual_out'))
 
 
 def append_flights(record_gdf):

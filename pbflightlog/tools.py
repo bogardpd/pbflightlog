@@ -1,14 +1,14 @@
 """Functions for CLI commands."""
 
+# Standard imports
 import os
 import sys
-from zoneinfo import ZoneInfo
 
+# Third-party imports
 import requests
 import geopandas as gpd
-from dateutil import parser
-from tabulate import tabulate
 
+# Project imports
 from pbflightlog.aeroapi import AeroAPIWrapper
 import pbflightlog.aeroapi as aero
 from pbflightlog.boarding_pass import BoardingPass
@@ -28,41 +28,19 @@ def add_flight_number(airline, flight_number):
             airline = record['icao_code']
     ident = f"{airline}{flight_number}"
     print(f"Looking up {ident}:")
-    flights = aero.get_flights_ident(ident, "designator")
-    if len(flights) == 0:
+    fa_flights = aero.get_flights_ident(ident, "designator")
+    if len(fa_flights) == 0:
         print("No matching flights found.")
-        sys.exit(0)
-    flights = sorted(flights, key=lambda f: f['scheduled_out'], reverse=True)
-    table = [
-        [
-            i + 1,
-            f['ident'],
-            _dt_str_tz(f['scheduled_out'], f['origin']['timezone']),
-            f['origin']['code_iata'] or f['origin']['code'],
-            f['destination']['code_iata'] or f['destination']['code'],
-            f['progress_percent'],
-        ]
-        for i, f in enumerate(flights)
-    ]
-    print(tabulate(table,
-        headers=["Row", "Ident", "Departure", "Orig", "Dest", "Progress %"],
+        sys.exit(1)
+    flights = [fl.Flight.from_aeroapi(f) for f in fa_flights]
+    flight = fl.Flight.select_flight(flights)
+    if flight.progress is None or flight.progress < 100:
+        print(
+            f"⚠️ Flight is not complete ({flight.progress}% complete). "
+            "Flight was not added to log."
+        )
+        sys.exit(1)
 
-    ))
-    selected_flight = None
-    while selected_flight is None:
-        row = input("Select a row number (or Q to quit): ")
-        if row.upper() == "Q":
-            sys.exit(0)
-        try:
-            row_index = int(row) - 1
-            if row_index < 0:
-                print("Invalid row selection.")
-                continue
-            selected_flight = flights[row_index]
-        except IndexError, ValueError:
-            print("Invalid row selection.")
-
-    flight = fl.Flight.from_aeroapi(selected_flight)
     flight.fetch_aeroapi_track_geometry()
     print(flight.gdf().iloc[0])
 
@@ -92,8 +70,8 @@ def import_recent():
     response.raise_for_status()
     fh_recent_flights = response.json()
     if len(fh_recent_flights) == 0:
-        print("Flight Historian provided zero recent flights.")
-        quit()
+        print("ℹ️ Flight Historian provided zero recent flights.")
+        sys.exit(0)
     print(f"{len(fh_recent_flights)} recent flight(s) found.")
 
     # Get list of Flight Historian IDs already in log.
@@ -114,8 +92,8 @@ def parse_bcbp(bcbp_str):
     """Parses a Bar-Coded Boarding Pass string."""
     bp = BoardingPass(bcbp_str)
     if not bp.valid:
-        print("The boarding pass data is not valid.")
-        quit()
+        print("⚠️ The boarding pass data is not valid.")
+        sys.exit(1)
     flight_dates = bp.flight_dates
     for leg_index, leg in enumerate(bp.raw['legs']):
         airline_iata = leg['operating_carrier'].strip()
@@ -131,9 +109,3 @@ def parse_bcbp(bcbp_str):
 def update_routes():
     """Refreshes the routes table."""
     fl.update_routes()
-
-def _dt_str_tz(dt_str, tz):
-    """Converts a datetime string into local time."""
-    dt = parser.isoparse(dt_str)
-    dt_tz = dt.astimezone(ZoneInfo(tz))
-    return dt_tz.strftime("%a %d %b %Y %H:%M %Z")

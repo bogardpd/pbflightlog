@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 from math import ceil
 from typing import Self
+from zoneinfo import ZoneInfo
 
 # Third-party imports
 import colorama
@@ -16,6 +17,7 @@ import pandas as pd
 from dateutil.parser import isoparse
 from pyproj import Geod
 from shapely.geometry import Point, LineString, MultiLineString
+from tabulate import tabulate
 
 # Project imports
 import pbflightlog.aeroapi as aero
@@ -39,11 +41,22 @@ class Flight():
     def __init__(self):
         self.geometry: MultiLineString | None = None
         self.departure_utc: datetime | None = None
+        self.scheduled_out: datetime | None = None
+        self.estimated_out: datetime | None = None
+        self.actual_out: datetime | None = None
         self.arrival_utc: datetime | None = None
+        self.scheduled_in: datetime | None = None
+        self.estimated_in: datetime | None = None
+        self.actual_in: datetime | None = None
+        self.ident: str | None = None
         self.airline_fid: int | None = None
         self.flight_number: str | None = None
         self.origin_airport_fid: int | None = None
+        self.origin_code: str | None = None
+        self.origin_tz: str | None = None
         self.destination_airport_fid: int | None = None
+        self.destination_code: str | None = None
+        self.destination_tz: str | None = None
         self.aircraft_type_fid: int | None = None
         self.operator_fid: int | None = None
         self.tail_number: str | None = None
@@ -51,6 +64,7 @@ class Flight():
         self.fa_json: dict | None = None
         self.geom_source: str | None = None
         self.distance_mi: int | None = None
+        self.progress: int | None = None
 
     def gdf(self) -> gpd.GeoDataFrame:
         """Returns a GeoDataFrame record for the flight."""
@@ -76,6 +90,12 @@ class Flight():
 
     def fetch_aeroapi_track_geometry(self) -> None:
         """Gets flight track from AeroAPI"""
+        if self.progress is None or self.progress < 100:
+            print(
+                "⚠️ Cannot get track: flight is not complete "
+                f"({self.progress}% complete)."
+            )
+            return
         if self.fa_flight_id is None:
             print("⚠️ Cannot get track: fa_flight_id is not set.")
             return
@@ -99,28 +119,54 @@ class Flight():
         except TypeError, ValueError:
             print(f"⚠️ No distance found for {self.fa_flight_id}.")
 
+    def _arr_utc(self) -> datetime | None:
+        """Gets the actual arrival time of a flight."""
+        if self.actual_in is None:
+            # Flights diverted to a different airport use estimated_in.
+            if self.progress == 100:
+                return self.estimated_in
+            return None
+        return self.actual_in
+
+    def _dep_utc(self) -> datetime | None:
+        """Gets the actual departure time of a flight."""
+        return self.actual_out or None
 
     @classmethod
     def from_aeroapi(cls, fa_json: dict) -> Self:
         """Loads flight values from an AeroAPI response."""
         flight = cls()
-        progress = fa_json.get('progress_percent')
-        if progress is None or progress != 100:
-            print(
-                f"⚠️ {fa_json.get('ident')} is not 100% complete (complete: "
-                f"{progress}%). Flight was not added to log."
-            )
-            sys.exit(1)
+        try:
+            flight.progress = int(fa_json.get('progress_percent'))
+        except TypeError, ValueError:
+            pass
         flight.fa_json = fa_json
-        flight.departure_utc = cls.dep_utc(fa_json)
-        flight.arrival_utc = cls.arr_utc(fa_json)
+        flight.ident = fa_json.get('ident')
+        flight.scheduled_out = cls.parse_dt(fa_json.get('scheduled_out'))
+        flight.estimated_out = cls.parse_dt(fa_json.get('estimated_out'))
+        flight.actual_out = cls.parse_dt(fa_json.get('actual_out'))
+        flight.scheduled_in = cls.parse_dt(fa_json.get('scheduled_in'))
+        flight.estimated_in = cls.parse_dt(fa_json.get('estimated_in'))
+        flight.actual_in = cls.parse_dt(fa_json.get('actual_in'))
+        flight.departure_utc = flight._dep_utc()
+        flight.arrival_utc = flight._arr_utc()
         flight.flight_number = fa_json.get('flight_number')
+
+        origin = fa_json.get('origin', {})
         flight.origin_airport_fid = find_airport_fid(
-            fa_json.get('origin', {}).get('code')
+            origin.get('code')
         )
+        flight.origin_code = origin.get('code_iata') or origin.get('code')
+        flight.origin_tz = origin.get('timezone')
+
+        destination = fa_json.get('destination', {})
         flight.destination_airport_fid = find_airport_fid(
-            fa_json.get('destination', {}).get('code')
+            destination.get('code')
         )
+        flight.destination_code = destination.get('code_iata') \
+            or destination.get('code')
+        flight.destination_tz = destination.get('timezone')
+
         flight.aircraft_type_fid = find_aircraft_type_fid(
             fa_json.get('aircraft_type')
         )
@@ -130,21 +176,54 @@ class Flight():
         return flight
 
     @classmethod
-    def arr_utc(cls, fa_json: dict) -> datetime | None:
-        """Gets the actual arrival time of a flight."""
-        if fa_json.get('actual_in') is None:
-            # Flights diverted to a different airport use estimated_in.
-            if fa_json.get('progress_percent') == 100:
-                return fa_json.get('estimated_in')
+    def select_flight(cls, flights: list(Self)) -> Self:
+        """Asks user to choose a Flight from a list of Flights."""
+        print(len(flights))
+        if len(flights) == 0:
             return None
-        return isoparse(fa_json.get('actual_in'))
+        if len(flights) == 1:
+            return flights[0]
+        flights = sorted(flights, key=lambda f: (
+            f.scheduled_out is None, f.scheduled_out
+        ), reverse=True)
+        table = [
+            [
+                i + 1,
+                f.ident,
+                _dt_str_tz((
+                    f.actual_out or f.estimated_out or f.scheduled_out
+                ), f.origin_tz),
+                f.origin_code,
+                f.destination_code,
+                f.progress,
+            ]
+            for i, f in enumerate(flights)
+        ]
+        print(tabulate(table,
+            headers=["Row", "Ident", "Departure", "Orig", "Dest", "Progress %"],
 
-    @classmethod
-    def dep_utc(cls, flight_json: dict) -> datetime | None:
-        """Gets the actual departure time of a flight."""
-        if flight_json.get('actual_out') is None:
+        ))
+        selected_flight = None
+        while selected_flight is None:
+            row = input("Select a row number (or Q to quit): ")
+            if row.upper() == "Q":
+                sys.exit(0)
+            try:
+                row_index = int(row) - 1
+                if row_index < 0:
+                    print("Invalid row selection.")
+                    continue
+                selected_flight = flights[row_index]
+            except IndexError, ValueError:
+                print("Invalid row selection.")
+        return selected_flight
+
+    @staticmethod
+    def parse_dt(dt_str) -> datetime | None:
+        """Parses a datetime string."""
+        if dt_str is None:
             return None
-        return isoparse(flight_json.get('actual_out'))
+        return isoparse(dt_str)
 
 
 def append_flights(record_gdf):
@@ -469,3 +548,9 @@ def _format_time(time_val):
         return None
     return time_val.strftime("%Y-%m-%dT%H:%M:%SZ")
 
+def _dt_str_tz(dt, tz):
+    """Converts a datetime into local time."""
+    if dt is None or tz is None:
+        return None
+    dt_tz = dt.astimezone(ZoneInfo(tz))
+    return dt_tz.strftime("%a %d %b %Y %H:%M %Z")

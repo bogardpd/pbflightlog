@@ -92,7 +92,7 @@ class Flight():
             p.get('latitude'),
             p.get('altitude') * METERS_PER_HUNDRED_FEET,
         ) for p in positions])
-        self.geometry = _split_at_antimeridian(track_ls)
+        self.geometry = split_at_antimeridian(track_ls)
         self.geom_source = "FlightAware"
         try:
             self.distance_mi = int(fa_json.get('actual_distance'))
@@ -378,6 +378,64 @@ def update_routes():
         f"Updated all routes in {flight_log}."
     )
 
+
+def split_at_antimeridian(track_ls: LineString):
+    """Split a LineString at the antimeridian."""
+    # Find all points where the track crosses the antimeridian.
+    crossings = [
+        i + 1 for i, (p1, p2)
+        in enumerate(zip(track_ls.coords[:-1], track_ls.coords[1:]))
+        if abs(p1[0] - p2[0]) > 180
+    ]
+    if len(crossings) == 0:
+        return MultiLineString([track_ls])
+
+    # Split the track at the indices.
+    tracks = []
+    starts = [0, *crossings]
+    ends = [*crossings, len(track_ls.coords)-1]
+    tracks = [
+        track_ls.coords[start:end] for start, end in zip(starts, ends)
+    ]
+    for i, track in enumerate(tracks):
+        if i > 0:
+            p1 = track[0]
+            p2 = tracks[i-1][-1]
+            p_cross = _crossing_point(p1, p2)
+            if p_cross is not None:
+                track.insert(0, p_cross)
+        if i < len(crossings):
+            p1 = track[-1]
+            p2 = tracks[i+1][0]
+            p_cross = _crossing_point(p1, p2)
+            if p_cross is not None:
+                track.append(p_cross)
+
+    # Filter out tracks with only one point.
+    tracks = [track for track in tracks if len(track) > 1]
+    return MultiLineString(tracks)
+
+def _crossing_point(p1, p2):
+    """Return the point where a track crosses the antemeridian.
+    Returns None if p1 is already on the antemeridian.
+
+    p1 : tuple(float)
+        The point on the current track
+    p2 : tuple(float)
+        The point on the adjacent track.
+    """
+    p2 = list(p2)
+    if -180 < p1[0] < 0:
+        lon = -180
+        p2[0] = p2[0] - 360
+    elif 0 < p1[0] < 180:
+        lon = 180
+        p2[0] = p2[0] + 360
+    else:
+        return None
+    x_frac = (lon - p1[0]) / (p2[0] - p1[0])
+    return tuple([c1 + (x_frac * (c2 - c1)) for c1, c2 in zip(p1, p2)])
+
 def _format_time(time_val):
     """Format time as ISO 8601 with Z."""
     if time_val is None:
@@ -406,70 +464,8 @@ def _great_circle_route(point1, point2) -> pd.Series:
         point2.x, point2.y,
         num_points - 2,
     )
-    geom = _split_at_antimeridian(
+    geom = split_at_antimeridian(
         LineString([point1, *midpoints, point2])
     )
 
     return pd.Series([dist_mi, geom])
-
-def _split_at_antimeridian(track_ls: LineString) -> MultiLineString:
-    """Splits a linestring at the antimeridian (180 degrees)."""
-    points = [Point(*coord) for coord in track_ls.coords]
-    if len(points) < 2:
-        return MultiLineString(track_ls)
-    crossing_index = None
-    crossing_lat = None
-    crossing_lon = [None, None]
-    crossing_alt = None
-    for i, (p1, p2) in enumerate(zip(points[:-1],points[1:])):
-        if abs(p1.x - p2.x) > 180:
-            crossing_index = i + 1
-            # Calculate crossing points at -180 and +180 longitude.
-            if p1.x > p2.x:
-                dist_to_crossing = 180 - p1.x
-                total_dist = (180 - p1.x) + (180 + p2.x)
-                crossing_lon = [180, -180]
-            else:
-                dist_to_crossing = p1.x - (-180)
-                total_dist = (p1.x - (-180)) + (180 - p2.x)
-                crossing_lon = [-180, 180]
-            if total_dist == 0:
-                crossing_lat = p1.y
-                if p1.has_z:
-                    crossing_alt = p1.z
-            else:
-                frac_dist = dist_to_crossing / total_dist
-                crossing_lat = p1.y + frac_dist * (p2.y - p1.y)
-                if p1.has_z:
-                    crossing_alt = p1.z + frac_dist * (p2.z - p1.z)
-            break
-    if crossing_index is None:
-        # No crossing was found. Return a single part MultiLineString.
-        return MultiLineString([track_ls])
-
-    # Add crossing point to both parts of the split LineString.
-    if crossing_alt is None:
-        crossing = [
-            Point(crossing_lon[0], crossing_lat),
-            Point(crossing_lon[1], crossing_lat),
-        ]
-    else:
-        crossing = [
-            Point(crossing_lon[0], crossing_lat, crossing_alt),
-            Point(crossing_lon[1], crossing_lat, crossing_alt),
-        ]
-
-    parts = [
-        [*points[:crossing_index], crossing[0]],
-        [crossing[1], *points[crossing_index:]],
-    ]
-    # Check if we created a point that was already in the part.
-    if parts[0][-1] == parts[0][-2]:
-        parts[0] = parts[0][:-1]
-    if parts[1][0] == parts[1][1]:
-        parts[1] = parts[1][1:]
-
-    # Filter out parts with a single point and convert to LineStrings.
-    parts = [LineString(part) for part in parts if len(part) > 1]
-
-    return MultiLineString(parts)

@@ -19,14 +19,14 @@ def add_fa_flight_id(ident):
     aw = AeroAPIWrapper()
     aw.add_flight(ident)
 
-def add_flight_number(airline, flight_number):
+def add_flight_number(airline_code, flight_number):
     """Gets info for a flight number and logs the flight."""
+    airline = fl.Airline.find_by_code(airline_code)
     # If airline is IATA, try to look up ICAO.
-    if len(airline) == 2:
-        record = fl.find_airline_by_code(airline)
-        if record is not None and record['icao_code'] is not None:
-            airline = record['icao_code']
-    ident = f"{airline}{flight_number}"
+    if len(airline_code) == 2:
+        if airline is not None and airline.icao_code is not None:
+            airline_code = airline.icao_code
+    ident = f"{airline_code}{flight_number}"
     print(f"Looking up {ident}:")
     fa_flights = aero.get_flights_ident(ident, "designator")
     if len(fa_flights) == 0:
@@ -41,6 +41,7 @@ def add_flight_number(airline, flight_number):
         )
         sys.exit(1)
     flight.fetch_aeroapi_track_geometry()
+    flight.airline_fid = airline.fid
     flight.save()
     update_routes()
 

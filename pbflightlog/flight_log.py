@@ -38,6 +38,8 @@ if flight_log is None:
 
 class Flight():
     """Represents a flight record."""
+    LAYER = "flights"
+
     def __init__(self):
         # Fields used in flight log database:
         self.geometry: MultiLineString | None = None
@@ -69,28 +71,6 @@ class Flight():
         self.destination_tz: str | None = None
         self.progress: int | None = None
 
-    def gdf(self) -> gpd.GeoDataFrame:
-        """Returns a GeoDataFrame record for the flight."""
-        record = {
-            'geometry': self.geometry,
-            'departure_utc': _format_time(self.departure_utc),
-            'arrival_utc': _format_time(self.arrival_utc),
-            'flight_number': self.flight_number,
-            'origin_airport_fid': self.origin_airport_fid,
-            'destination_airport_fid': self.destination_airport_fid,
-            'aircraft_type_fid': self.aircraft_type_fid,
-            'operator_fid': self.operator_fid,
-            'tail_number': self.tail_number,
-            'fa_flight_id': self.fa_flight_id,
-            'fa_json': (
-                None if self.fa_json is None else json.dumps(self.fa_json)
-            ),
-            'geom_source': self.geom_source,
-            'distance_mi': self.distance_mi,
-            'comments': None,
-        }
-        return gpd.GeoDataFrame([record], geometry='geometry', crs=CRS)
-
     def fetch_aeroapi_track_geometry(self) -> None:
         """Gets flight track from AeroAPI"""
         if self.progress is None or self.progress < 100:
@@ -121,6 +101,77 @@ class Flight():
             self.distance_mi = int(fa_json.get('actual_distance'))
         except TypeError, ValueError:
             print(f"⚠️ No distance found for {self.fa_flight_id}.")
+
+    def gdf(self) -> gpd.GeoDataFrame:
+        """Returns a GeoDataFrame record for the flight."""
+        record = {
+            'geometry': self.geometry,
+            'departure_utc': _format_time(self.departure_utc),
+            'arrival_utc': _format_time(self.arrival_utc),
+            'flight_number': self.flight_number,
+            'origin_airport_fid': self.origin_airport_fid,
+            'destination_airport_fid': self.destination_airport_fid,
+            'aircraft_type_fid': self.aircraft_type_fid,
+            'operator_fid': self.operator_fid,
+            'tail_number': self.tail_number,
+            'fa_flight_id': self.fa_flight_id,
+            'fa_json': (
+                None if self.fa_json is None else json.dumps(self.fa_json)
+            ),
+            'geom_source': self.geom_source,
+            'distance_mi': self.distance_mi,
+            'comments': None,
+        }
+        return gpd.GeoDataFrame([record], geometry='geometry', crs=CRS)
+
+    def save(self) -> None:
+        """Appends a flight to the geopackage file."""
+        record_gdf = self.gdf()
+        existing = gpd.read_file(
+            flight_log,
+            layer=Flight.LAYER,
+            engine="pyogrio",
+            rows=0,
+        )
+        existing_cols = list(existing.columns)
+        incoming_cols = list(record_gdf.columns)
+
+        # Check that geometry column name matches.
+        geom_col = record_gdf.geometry.name
+        if geom_col not in existing_cols:
+            raise ValueError(
+                f"Geometry column '{geom_col}' not found in existing "
+                "layer schema"
+            )
+
+        # Check for columns in new data not in current schema.
+        extra_cols = set(incoming_cols) - set(existing_cols)
+        if extra_cols:
+            raise ValueError(
+                "Incoming data has columns not present in layer "
+                f"schema: {extra_cols}"
+            )
+
+        # Add missing columns from existing schema as null values.
+        for col in existing_cols:
+            if col not in record_gdf.columns:
+                record_gdf[col] = None
+                print(
+                    f"No value was provided for column '{col}'; setting "
+                    "its value to null."
+                )
+
+        # Reorder columns to match existing schema.
+        gdf = record_gdf[existing_cols]
+        gdf.to_file(
+            flight_log,
+            driver="GPKG",
+            engine="pyogrio",
+            layer=Flight.LAYER,
+            mode="a",
+        )
+        print(f"Appended flight to {flight_log}.")
+
 
     def _arr_utc(self) -> datetime | None:
         """Gets the actual arrival time of a flight."""

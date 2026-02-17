@@ -40,9 +40,9 @@ def add_flight_number(airline, flight_number):
             "Flight was not added to log."
         )
         sys.exit(1)
-
     flight.fetch_aeroapi_track_geometry()
-    print(flight.gdf().iloc[0])
+    flight.save()
+    update_routes()
 
 
 def import_boarding_passes():

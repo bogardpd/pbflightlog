@@ -39,24 +39,14 @@ if flight_log is None:
 class Flight():
     """Represents a flight record."""
     def __init__(self):
+        # Fields used in flight log database:
         self.geometry: MultiLineString | None = None
         self.departure_utc: datetime | None = None
-        self.scheduled_out: datetime | None = None
-        self.estimated_out: datetime | None = None
-        self.actual_out: datetime | None = None
         self.arrival_utc: datetime | None = None
-        self.scheduled_in: datetime | None = None
-        self.estimated_in: datetime | None = None
-        self.actual_in: datetime | None = None
-        self.ident: str | None = None
         self.airline_fid: int | None = None
         self.flight_number: str | None = None
         self.origin_airport_fid: int | None = None
-        self.origin_code: str | None = None
-        self.origin_tz: str | None = None
         self.destination_airport_fid: int | None = None
-        self.destination_code: str | None = None
-        self.destination_tz: str | None = None
         self.aircraft_type_fid: int | None = None
         self.operator_fid: int | None = None
         self.tail_number: str | None = None
@@ -64,6 +54,19 @@ class Flight():
         self.fa_json: dict | None = None
         self.geom_source: str | None = None
         self.distance_mi: int | None = None
+
+        # Other fields from AeroAPI:
+        self.scheduled_out: datetime | None = None
+        self.estimated_out: datetime | None = None
+        self.actual_out: datetime | None = None
+        self.scheduled_in: datetime | None = None
+        self.estimated_in: datetime | None = None
+        self.actual_in: datetime | None = None
+        self.ident: str | None = None
+        self.origin_code: str | None = None
+        self.origin_tz: str | None = None
+        self.destination_code: str | None = None
+        self.destination_tz: str | None = None
         self.progress: int | None = None
 
     def gdf(self) -> gpd.GeoDataFrame:

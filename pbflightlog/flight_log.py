@@ -51,19 +51,6 @@ class Airline():
         self.is_defunct: bool | None = None
 
     @classmethod
-    def from_record(cls, record: dict) -> Self:
-        """Creates an Airline from a dictionary."""
-        airline = Airline()
-        airline.fid = record.get('fid')
-        airline.name = record.get('name')
-        airline.icao_code = record.get('icao_code')
-        airline.iata_code = record.get('iata_code')
-        airline.numeric_code = record.get('numeric_code')
-        airline.is_only_operator = record.get('is_only_operator')
-        airline.is_defunct = record.get('is_defunct')
-        return airline
-
-    @classmethod
     def find_by_code(cls, code: str) -> Self | None:
         """Finds an airline by ICAO, IATA, or numeric code."""
         airlines = gpd.read_file(
@@ -82,9 +69,12 @@ class Airline():
             # Search for matching codes.
             matching_code = airlines[airlines[code_type] == code]
             if len(matching_code) == 1:
-                airline = matching_code.iloc[0].to_dict()
-                airline['fid'] = int(matching_code.index[0])
-                return Airline.from_record(airline)
+                airline_dict = matching_code.iloc[0].to_dict()
+                airline_dict['fid'] = int(matching_code.index[0])
+                airline = Airline()
+                for key, value in airline_dict.items():
+                    setattr(airline, key, value)
+                return airline
         return None
 
 class Flight():

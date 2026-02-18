@@ -134,16 +134,21 @@ class AeroAPIWrapper:
             'departure_utc': self.dep_utc(flight),
             'arrival_utc': self.arr_utc(flight),
             'flight_number': flight['flight_number'],
-            'origin_airport_fid': fl.find_airport_fid(
-                flight['origin']['code']
+            'origin_airport_fid': getattr(
+                fl.Airport.find_by_code(flight['origin']['code']),
+                'fid', None
             ),
-            'destination_airport_fid': fl.find_airport_fid(
-                flight['destination']['code']
+            'destination_airport_fid': getattr(
+                fl.Airport.find_by_code(flight['destination']['code']),
+                'fid', None
             ),
-            'aircraft_type_fid': fl.find_aircraft_type_fid(
-                flight['aircraft_type']
+            'aircraft_type_fid': getattr(
+                fl.AircraftType.find_by_code(flight['aircraft_type']),
+                'fid', None
             ),
-            'operator_fid': fl.find_airline_fid(flight['operator']),
+            'operator_fid': getattr(
+                fl.Airline.find_by_code(flight['operator']), 'fid', None
+            ),
             'tail_number': flight['registration'],
             'fa_flight_id': flight['fa_flight_id'],
             'fa_json': json.dumps(flight),

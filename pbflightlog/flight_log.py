@@ -36,9 +36,63 @@ if flight_log is None:
         "Environment variable FLIGHT_LOG_GEOPACKAGE_PATH is missing."
     )
 
-class Airline():
+class Record():
+    """Represents a record from a flight log table."""
+    LAYER = None
+    FIND_BY_CODES = []
+
+    @classmethod
+    def find_by_code(cls, code: str) -> Self | None:
+        """Finds a record by searching through code fields."""
+        if getattr(cls, 'FIND_BY_CODES', None) is None:
+            return None
+        if len(cls.FIND_BY_CODES) == 0:
+            return None
+        records = gpd.read_file(
+            flight_log,
+            layer = cls.LAYER,
+            engine="pyogrio",
+            fid_as_index=True,
+        )
+
+        # Filter out defunct records. This is helpful in situations
+        # where current records use the same codes as an old record
+        # (for example, the current PSA airlines and the defunct Comair
+        # both use the IATA code 'OH'.)
+        if 'is_defunct' in records.columns:
+            records = records[~records['is_defunct']]
+        for code_type in cls.FIND_BY_CODES:
+            # Search for matching codes.
+            matching_code = records[records[code_type] == code]
+            if len(matching_code) == 1:
+                record_dict = matching_code.iloc[0].to_dict()
+                record_dict['fid'] = int(matching_code.index[0])
+                record = cls()
+                for key, value in record_dict.items():
+                    setattr(record, key, value)
+                return record
+        print(f"⚠️ Could not find {cls} matching {code}.")
+        return None
+
+class AircraftType(Record):
+    """Represents an aircraft type record."""
+    LAYER = "aircraft_types"
+    FIND_BY_CODES = ['icao_code']
+
+    def __init__(self):
+        # Fields used in flight log database:
+        self.fid: int | None = None
+        self.manufacturer: str | None = None
+        self.name: str | None = None
+        self.icao_code: str | None = None
+        self.iata_code: str | None = None
+        self.family: str | None = None
+        self.category: str | None = None
+
+class Airline(Record):
     """Represents an airline record."""
     LAYER = "airlines"
+    FIND_BY_CODES = ['icao_code', 'iata_code']
 
     def __init__(self):
         # Fields used in flight log database:
@@ -50,36 +104,27 @@ class Airline():
         self.is_only_operator: bool | None = None
         self.is_defunct: bool | None = None
 
-    @classmethod
-    def find_by_code(cls, code: str) -> Self | None:
-        """Finds an airline by ICAO, IATA, or numeric code."""
-        airlines = gpd.read_file(
-            flight_log,
-            layer = Airline.LAYER,
-            engine="pyogrio",
-            fid_as_index=True,
-        )
+class Airport(Record):
+    """Represents an airline record."""
+    LAYER = "airports"
+    FIND_BY_CODES = ['icao_code', 'iata_code']
 
-        # Filter out defunct airlines. This is helpful in situations
-        # where current airlines use the same codes as an old airline
-        # (for example, the current PSA airlines and the defunct Comair
-        # both use the IATA code 'OH'.)
-        airlines = airlines[~airlines['is_defunct']]
-        for code_type in ['icao_code', 'iata_code']:
-            # Search for matching codes.
-            matching_code = airlines[airlines[code_type] == code]
-            if len(matching_code) == 1:
-                airline_dict = matching_code.iloc[0].to_dict()
-                airline_dict['fid'] = int(matching_code.index[0])
-                airline = Airline()
-                for key, value in airline_dict.items():
-                    setattr(airline, key, value)
-                return airline
-        return None
+    def __init__(self):
+        # Fields used in flight log database:
+        self.fid: int | None = None
+        self.geometry: Point | None = None
+        self.name: str | None = None
+        self.country: str | None = None
+        self.icao_code: str | None = None
+        self.iata_code: str | None = None
+        self.faa_lid: str | None = None
+        self.time_zone: str | None = None
+        self.is_defunct: bool | None = None
 
-class Flight():
+class Flight(Record):
     """Represents a flight record."""
     LAYER = "flights"
+    FIND_BY_CODES = []
 
     def __init__(self):
         # Fields used in flight log database:
@@ -249,24 +294,27 @@ class Flight():
         flight.flight_number = fa_json.get('flight_number')
 
         origin = fa_json.get('origin', {})
-        flight.origin_airport_fid = find_airport_fid(
-            origin.get('code')
+        flight.origin_airport_fid = getattr(
+            Airport.find_by_code(origin.get('code')), 'fid', None
         )
         flight.origin_code = origin.get('code_iata') or origin.get('code')
         flight.origin_tz = origin.get('timezone')
 
         destination = fa_json.get('destination', {})
-        flight.destination_airport_fid = find_airport_fid(
-            destination.get('code')
+        flight.destination_airport_fid = getattr(
+            Airport.find_by_code(destination.get('code')), 'fid', None
         )
         flight.destination_code = destination.get('code_iata') \
             or destination.get('code')
         flight.destination_tz = destination.get('timezone')
 
-        flight.aircraft_type_fid = find_aircraft_type_fid(
-            fa_json.get('aircraft_type')
+        flight.aircraft_type_fid = getattr(
+            AircraftType.find_by_code(fa_json.get('aircraft_type')),
+            'fid', None
         )
-        flight.operator_fid = find_airline_fid(fa_json.get('operator'))
+        flight.operator_fid = getattr(
+            Airline.find_by_code(fa_json.get('operator')), 'fid', None
+        )
         flight.tail_number = fa_json.get('registration')
         flight.fa_flight_id = fa_json.get('fa_flight_id')
         return flight
@@ -375,112 +423,6 @@ def append_flights(record_gdf):
         f"Appended {len(record_gdf)} flights(s) to '{layer}' in {flight_log}."
     )
     update_routes()
-
-def find_aircraft_type_fid(code):
-    """Finds an aircraft_type fid by ICAO or IATA code."""
-    layer = "aircraft_types"
-    ac_types = gpd.read_file(
-        flight_log,
-        layer=layer,
-        engine="pyogrio",
-        fid_as_index=True
-    )
-
-    for code_type in ['icao_code', 'iata_code']:
-        # Search for matching codes.
-        matching_code = ac_types[ac_types[code_type] == code]
-        if len(matching_code) == 1:
-            return matching_code.index[0]
-        if len(matching_code) > 1:
-            print(
-                colorama.Fore.YELLOW
-                + f"'{code}' matches more than one aircraft type. Setting "
-                + "value to null."
-                + colorama.Style.RESET_ALL,
-            )
-            return None
-
-    # No matches were found.
-    print(
-        colorama.Fore.YELLOW
-        + f"'{code}' did not match any aircraft type. Setting value to null."
-        + colorama.Style.RESET_ALL,
-    )
-    return None
-
-def find_airline_fid(code):
-    """Finds an airline fid by ICAO or IATA code."""
-    layer = "airlines"
-    airlines = gpd.read_file(
-        flight_log,
-        layer=layer,
-        engine="pyogrio",
-        fid_as_index=True
-    )
-    # Filter out defunct airlines. This is helpful in situations where
-    # current airlines use the same codes as an old airline (for
-    # example, the current PSA airlines and the defunct Comair both use
-    # the IATA code 'OH'.)
-    airlines = airlines[~airlines['is_defunct']]
-
-    for code_type in ['icao_code', 'iata_code']:
-        # Search for matching codes.
-        matching_code = airlines[airlines[code_type] == code]
-        if len(matching_code) == 1:
-            return matching_code.index[0]
-        if len(matching_code) > 1:
-            print(
-                colorama.Fore.YELLOW
-                + f"'{code}' matches more than one airline. Setting value to "
-                + "null."
-                + colorama.Style.RESET_ALL,
-            )
-            return None
-
-    # No matches were found.
-    print(
-        colorama.Fore.YELLOW
-        + f"'{code}' did not match any airline. Setting value to null."
-        + colorama.Style.RESET_ALL,
-    )
-    return None
-
-def find_airport_fid(code):
-    """Finds an airport fid by ICAO or IATA code."""
-    layer = "airports"
-    airports = gpd.read_file(
-        flight_log,
-        layer=layer,
-        engine="pyogrio",
-        fid_as_index=True
-    )
-    # Filter out defunct airports. This is helpful in situations where
-    # current airports use the same codes as an old airport (for
-    # example, the modern Denver airport and the old Denver Stapleton
-    # both use 'KDEN'/'DEN'.)
-    airports = airports[~airports['is_defunct']]
-
-    for code_type in ['icao_code', 'iata_code']:
-        # Search for matching codes.
-        matching_code = airports[airports[code_type] == code]
-        if len(matching_code) == 1:
-            return matching_code.index[0]
-        if len(matching_code) > 1:
-            print(
-                colorama.Fore.YELLOW
-                + f"'{code}' matches more than one airport. Setting value to "
-                + "null."
-                + colorama.Style.RESET_ALL,
-            )
-            return None
-
-    # No matches were found.
-    print(
-        colorama.Fore.YELLOW
-        + f"'{code}' did not match any airport. Setting value to null."
-        + colorama.Style.RESET_ALL,
-    )
-    return None
 
 def update_routes():
     """Updates the routes layer based on logged flights."""

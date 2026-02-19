@@ -33,7 +33,7 @@ Many of these scripts interact with [AeroAPI](https://www.flightaware.com/commer
 > [!IMPORTANT]
 > When these scripts call AeroAPI with your API key, you will incur AeroAPI per-query fees as appropriate for your AeroAPI account.
 
-The [`import-recent`](#import-recent) script also requires a [Flight Historian](https://www.flighthistorian.com) API key to be set as an environment variable:
+The [`add flight --recent`](#add-flight) script also requires a [Flight Historian](https://www.flighthistorian.com) API key to be set as an environment variable:
 
 `FLIGHT_HISTORIAN_API_KEY=yourkey`
 

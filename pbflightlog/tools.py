@@ -14,12 +14,14 @@ import pbflightlog.aeroapi as aero
 from pbflightlog.boarding_pass import BoardingPass
 import pbflightlog.flight_log as fl
 
-def add_fa_flight_id(ident):
-    """Gets flight info for an ident and saves flight(s) to log."""
-    aw = AeroAPIWrapper()
-    aw.add_flight(ident)
+def add_fa_flight_id(fa_flight_id: str) -> None:
+    """Gets info for a fa_flight_id and saves flight to log."""
+    print(f"Looking up {fa_flight_id}...")
+    fa_flights = aero.get_flights_ident(fa_flight_id, "fa_flight_id")
+    _add_fa_flight_results(fa_flights)
+    update_routes()
 
-def add_flight_number(airline_code, flight_number):
+def add_flight_number(airline_code: str, flight_number: str) -> None:
     """Gets info for a flight number and logs the flight."""
     airline = fl.Airline.find_by_code(airline_code)
     # If airline is IATA, try to look up ICAO.
@@ -27,22 +29,9 @@ def add_flight_number(airline_code, flight_number):
         if airline is not None and airline.icao_code is not None:
             airline_code = airline.icao_code
     ident = f"{airline_code}{flight_number}"
-    print(f"Looking up {ident}:")
+    print(f"Looking up {ident}...")
     fa_flights = aero.get_flights_ident(ident, "designator")
-    if len(fa_flights) == 0:
-        print("No matching flights found.")
-        sys.exit(1)
-    flights = [fl.Flight.from_aeroapi(f) for f in fa_flights]
-    flight = fl.Flight.select_flight(flights)
-    if flight.progress is None or flight.progress < 100:
-        print(
-            f"⚠️ Flight is not complete ({flight.progress}% complete). "
-            "Flight was not added to log."
-        )
-        sys.exit(1)
-    flight.fetch_aeroapi_track_geometry()
-    flight.airline_fid = airline.fid
-    flight.save()
+    _add_fa_flight_results(fa_flights, {'airline_fid': airline.fid})
     update_routes()
 
 
@@ -110,3 +99,25 @@ def parse_bcbp(bcbp_str):
 def update_routes():
     """Refreshes the routes table."""
     fl.update_routes()
+
+def _add_fa_flight_results(fa_flights: dict, fields: dict = None) -> None:
+    """Processes the results of an AeroAPI flights request."""
+    if len(fa_flights) == 0:
+        print("No matching flights found.")
+        sys.exit(1)
+    flights = [fl.Flight.from_aeroapi(f) for f in fa_flights]
+    flight = fl.Flight.select_flight(flights)
+    if flight.progress is None or flight.progress < 100:
+        print(
+            f"⚠️ Flight is not complete ({flight.progress}% complete). "
+            "Flight was not added to log."
+        )
+        sys.exit(1)
+    flight.fetch_aeroapi_track_geometry()
+
+    # Set provided fields
+    if fields is not None:
+        for key, value in fields.items():
+            setattr(flight, key, value)
+
+    flight.save()

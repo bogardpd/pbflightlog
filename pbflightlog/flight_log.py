@@ -40,6 +40,18 @@ class Record():
     """Represents a record from a flight log table."""
     LAYER = None
     FIND_BY_CODES = []
+    DTYPES = {}
+
+    @classmethod
+    def pluck(cls, column) -> list(Self):
+        """Returns a list of all values of a column."""
+        records = gpd.read_file(
+            flight_log,
+            layer = cls.LAYER,
+            engine="pyogrio",
+            fid_as_index=True,
+        ).astype(cls.DTYPES)
+        return records[column].to_list()
 
     @classmethod
     def find_by_code(cls, code: str) -> Self | None:
@@ -78,6 +90,7 @@ class AircraftType(Record):
     """Represents an aircraft type record."""
     LAYER = "aircraft_types"
     FIND_BY_CODES = ['icao_code']
+    DTYPES = {}
 
     def __init__(self):
         # Fields used in flight log database:
@@ -93,6 +106,7 @@ class Airline(Record):
     """Represents an airline record."""
     LAYER = "airlines"
     FIND_BY_CODES = ['icao_code', 'iata_code']
+    DTYPES = {}
 
     def __init__(self):
         # Fields used in flight log database:
@@ -108,6 +122,7 @@ class Airport(Record):
     """Represents an airline record."""
     LAYER = "airports"
     FIND_BY_CODES = ['icao_code', 'iata_code']
+    DTYPES = {}
 
     def __init__(self):
         # Fields used in flight log database:
@@ -125,6 +140,7 @@ class Flight(Record):
     """Represents a flight record."""
     LAYER = "flights"
     FIND_BY_CODES = []
+    DTYPES = {'fh_id': "Int64"}
 
     def __init__(self):
         # Fields used in flight log database:
@@ -138,6 +154,7 @@ class Flight(Record):
         self.aircraft_type_fid: int | None = None
         self.operator_fid: int | None = None
         self.tail_number: str | None = None
+        self.fh_id: int | None = None
         self.fa_flight_id: str | None = None
         self.fa_json: dict | None = None
         self.geom_source: str | None = None
@@ -201,6 +218,7 @@ class Flight(Record):
             'aircraft_type_fid': self.aircraft_type_fid,
             'operator_fid': self.operator_fid,
             'tail_number': self.tail_number,
+            'fh_id': self.fh_id,
             'fa_flight_id': self.fa_flight_id,
             'fa_json': (
                 None if self.fa_json is None else json.dumps(self.fa_json)

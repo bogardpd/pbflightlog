@@ -6,13 +6,12 @@ import sys
 
 # Third-party imports
 import requests
-import geopandas as gpd
+import pandas as pd
 
 # Project imports
-from pbflightlog.aeroapi import AeroAPIWrapper
 import pbflightlog.aeroapi as aero
-from pbflightlog.boarding_pass import BoardingPass
 import pbflightlog.flight_log as fl
+from pbflightlog.boarding_pass import BoardingPass
 
 def add_fa_flight_id(fa_flight_id: str) -> None:
     """Gets info for a fa_flight_id and saves flight to log."""
@@ -46,11 +45,6 @@ def import_recent():
         raise KeyError(
             "Environment variable FLIGHT_HISTORIAN_API_KEY is missing."
         )
-    flight_log = os.getenv("FLIGHT_LOG_GEOPACKAGE_PATH")
-    if flight_log is None:
-        raise KeyError(
-            "Environment variable FLIGHT_LOG_GEOPACKAGE_PATH is missing."
-        )
 
     # Get recent flights.
     headers = {"api-key": api_key_fh}
@@ -65,18 +59,24 @@ def import_recent():
     print(f"{len(fh_recent_flights)} recent flight(s) found.")
 
     # Get list of Flight Historian IDs already in log.
-    current_flights = gpd.read_file(flight_log, layer='flights')
-    current_fh_ids = current_flights['fh_id'].unique().tolist()
+    current_fh_ids = [
+        f for f in fl.Flight.pluck('fh_id') if not pd.isna(f)
+    ]
 
-    # Look up recent flights with AeroAPI.
-    aw = AeroAPIWrapper()
+    # Look up recent flights on AeroAPI.
+    update_flag = False # Track if we need to update routes
     for flight in fh_recent_flights:
         print(f"Importing {flight}")
         if flight['fh_id'] in current_fh_ids:
             print("This flight is already in the log.")
             continue
-        fields = {'fh_id': flight['fh_id']}
-        aw.add_flight(flight['fa_flight_id'], fields=fields)
+        fa_flights = aero.get_flights_ident(
+            flight.get('fa_flight_id'), "fa_flight_id"
+        )
+        _add_fa_flight_results(fa_flights, {'fh_id': flight.get('fh_id')})
+        update_flag = True
+    if update_flag:
+        update_routes()
 
 def parse_bcbp(bcbp_str):
     """Parses a Bar-Coded Boarding Pass string."""

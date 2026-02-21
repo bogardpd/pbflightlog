@@ -1,6 +1,9 @@
 """Tools for interacting with a local GeoPackage flight log."""
 
+# Standard imports
 import argparse
+
+# Project imports
 import pbflightlog.tools as flt
 
 if __name__ == "__main__":

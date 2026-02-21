@@ -1,9 +1,11 @@
 """Tools for interacting with FlightAware's AeroAPI."""
 
+# Standard imports
 import os
 import time
 from datetime import datetime, timedelta, timezone
 
+# Third-party imports
 import requests
 
 # Load API key.

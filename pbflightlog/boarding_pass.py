@@ -116,7 +116,7 @@ class BoardingPass():
         self.blocks = None
         self._calculate_blocks()
         self.raw = {}
-        self.legs: list(Leg) = []
+        self.legs: list(Leg) = self._legs()
         self.valid = True
         self.version_number = None
         self._parse()
@@ -289,6 +289,14 @@ class BoardingPass():
             self.blocks['unique']['security'] = slice(
                 security_start, self.data_len
             )
+
+    def _legs(self) -> list(Leg):
+        """Returns Leg objects for each leg."""
+        return [
+            Leg(self.bcbp_str, self.blocks['repeated'][i])
+            for i in range(self.leg_count)
+        ]
+
 
     def _parse(self):
         """Parses a boarding pass and returns a dict."""
@@ -530,12 +538,20 @@ class BoardingPass():
 class Leg():
     """Represents one flight leg of a boarding pass."""
 
-    def __init__(self):
-        self.flight_date: date | None = None
-        self.airline_iata: str | None = None
-        self.flight_number: str | None = None
-        self.origin_iata: str | None = None
-        self.destination_iata: str | None = None
+    def __init__(self, bcbp_text: str, leg_blocks: dict):
+        self._bcbp_text = bcbp_text
+        self._blocks = leg_blocks
+        self.flight_date: date | None = self._parse_flight_date()
+        self.airline_iata: str | None = self._parse_airline_iata()
+        self.flight_number: str | None = self._parse_flight_number()
+        self.origin_iata: str | None = self._parse_airport_orig_iata()
+        self.destination_iata: str | None = self._parse_airport_dest_iata()
+
+    def __repr__(self):
+        return (
+            f"{self.flight_date} {self.airline_iata} {self.flight_number} "
+            f"{self.origin_iata}-{self.destination_iata}"
+        )
 
     def __str__(self):
         return (
@@ -543,7 +559,87 @@ class Leg():
             f"{self.origin_iata}-{self.destination_iata}"
         )
 
-def _parse_hex(hex_str):
+    def _parse_airline_iata(self) -> str | None:
+        """Parses airline IATA code."""
+        raw = _get_raw(
+            self._bcbp_text, self._blocks['mandatory'], slice(13, 16)
+        )
+        if raw is None:
+            return None
+        return raw.strip()
+
+    def _parse_airport_dest_iata(self) -> str | None:
+        """Parses destination airport IATA code."""
+        raw = _get_raw(
+            self._bcbp_text, self._blocks['mandatory'], slice(10, 13)
+        )
+        if raw is None:
+            return None
+        return raw.strip()
+
+    def _parse_airport_orig_iata(self) -> str | None:
+        """Parses origin airport IATA code."""
+        raw = _get_raw(
+            self._bcbp_text, self._blocks['mandatory'], slice(7, 10)
+        )
+        if raw is None:
+            return None
+        return raw.strip()
+
+    def _parse_flight_date(self) -> date | None:
+        """Parses flight date."""
+        raw = _get_raw(
+            self._bcbp_text, self._blocks['mandatory'], slice(21, 24)
+        )
+        try:
+            date_ordinal: int = int(raw)
+            if date_ordinal > 366 or date_ordinal < 1:
+                return None
+        except TypeError, ValueError:
+            return None
+        # Assume flight is up to 3 days in the future, or else the
+        # most recent date matching this ordinal in the past.
+        latest_dt = datetime.now() + timedelta(days=3)
+        latest_dt_year = latest_dt.timetuple().tm_year
+        latest_date = latest_dt.date()
+        # Loop through years in reverse trying to find a good date.
+        # Searches 8 years since leap years can be up to 8 years apart.
+        for year in range(latest_dt_year, latest_dt_year-8, -1):
+            test_date = date(year, 1, 1) + timedelta(days=date_ordinal-1)
+            if test_date.year != year:
+                # The ordinal was larger than the number of days
+                # this year, probably due to no leap year.
+                continue
+            if test_date > latest_date:
+                # The date this year is more than three days in the
+                # future.
+                continue
+            # This is the most recent date that works.
+            return test_date
+        return None
+
+    def _parse_flight_number(self) -> str | None:
+        """Parses flight number."""
+        raw = _get_raw(
+            self._bcbp_text, self._blocks['mandatory'], slice(16, 21)
+        )
+        if raw is None:
+            return None
+        return raw.strip().lstrip("0")
+
+def _get_raw(bcbp_str, block_slice, field_slice):
+    """Gets raw values for a field."""
+    if block_slice is None:
+        return None
+    chars = slice(
+        block_slice.start + field_slice.start,
+        block_slice.start + field_slice.stop,
+    )
+    if chars.stop > block_slice.stop:
+        return None
+    return bcbp_str[chars]
+
+def _parse_hex(hex_str) -> int | None:
     """Parses a hexadecimal string."""
     try:
         return int(hex_str, 16)

@@ -26,8 +26,7 @@ def add_flight_bcbp(bcbp_str) -> None:
     if not bp.valid:
         print("⚠️ The boarding pass data is not valid.")
         sys.exit(1)
-    print(bp.blocks)
-    print(bp.bcbp_str[bp.blocks['unique']['mandatory']])
+    print(bp.legs)
     quit()
     flight_dates = bp.flight_dates
     legs = [

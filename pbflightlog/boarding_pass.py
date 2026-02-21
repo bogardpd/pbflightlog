@@ -112,6 +112,8 @@ class BoardingPass():
     def __init__(self, bcbp_str):
         self.bcbp_str = bcbp_str
         self.data_len = len(self.bcbp_str)
+        self.leg_count = None
+        self.blocks = self._calculate_blocks()
         self.raw = {}
         self.legs: list(Leg) = []
         self.valid = True
@@ -160,6 +162,63 @@ class BoardingPass():
                 leg_dates.append(None)
 
         return leg_dates
+
+    def _calculate_blocks(self):
+        """
+        Builds a dict of block locations in the BCBP text.
+
+        Returns a dict with values containing slices of the start and
+        stop character indexes in the BCBP text for each block. Blocks
+        that are not present store a value of None instead of a slice.
+        """
+        if len(self.bcbp_str) < 60:
+            self.valid = False
+            return None
+        # Get number of legs.
+        try:
+            self.leg_count = int(self.bcbp_str[1:2])
+            if self.leg_count < 1 or self.leg_count > 4:
+                self.valid = False
+                return None
+        except ValueError:
+            self.valid = False
+            return None
+        # Initialize blocks with values that are always present.
+        blocks = {
+            'unique': {
+                'mandatory': slice(0, 23), # Always here
+                'conditional': None,
+                'security': None,
+            },
+            "repeated": [
+                {
+                    'mandatory': slice(23, 60), # Always here leg 1
+                    'conditional': None,
+                    'airline': None,
+                }
+            ],
+        }
+        # Get leg 1 conditional and airline blocks. Leg 1 also contains
+        # the unique conditional block.
+        cond_airline_1_size = _parse_hex(self.bcbp_str[58:60])
+        if cond_airline_1_size is None:
+            self.valid = False
+            return blocks
+        if cond_airline_1_size < 4:
+            # Conditional Unique not big enough to contain size field
+            blocks['unique']['conditional'] = slice(
+                60, 60 + cond_airline_1_size
+            )
+            return blocks
+        mand_uniq_size = _parse_hex(self.bcbp_str[62:64])
+        if mand_uniq_size is None:
+            self.valid = False
+            return blocks
+        blocks['unique']['conditional'] = slice(
+            60, 64 + mand_uniq_size
+        )
+        return blocks
+
 
     def _parse(self):
         """Parses a boarding pass and returns a dict."""
@@ -398,3 +457,10 @@ class Leg():
             f"{self.flight_date} {self.airline_iata} {self.flight_number} "
             f"{self.origin_iata}-{self.destination_iata}"
         )
+
+def _parse_hex(hex_str):
+    """Parses a hexadecimal string."""
+    try:
+        return int(hex_str, 16)
+    except ValueError:
+        return None

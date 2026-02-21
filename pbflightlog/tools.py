@@ -14,8 +14,6 @@ import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
 from pbflightlog.boarding_pass import BoardingPass, PKPass
 
-PASS_FILE = "pass.json" # Boarding pass filename within PKPass
-
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
     bp = BoardingPass(bcbp_str)

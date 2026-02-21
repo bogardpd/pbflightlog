@@ -311,9 +311,30 @@ class PKPass():
         self.pass_json = self._load_pass_json(path)
         self.relevant_date = self._parse_relevant_date()
         self.message = self.pass_json.get('barcode', {}).get('message')
+        self.boarding_pass = self._boarding_pass()
 
     @property
-    def boarding_pass(self) -> BoardingPass:
+    def archive_filename(self) -> str:
+        """Creates an archive filename."""
+        fields = []
+        if self.relevant_date is None:
+            if self.boarding_pass is not None:
+                date_str = self.boarding_pass.legs[0].flight_date or "NODATE"
+            date_str = "NODATE"
+        else:
+            date_str = self.relevant_date.strftime("%Y%m%dT%H%MZ")
+        fields.append(date_str)
+        if self.boarding_pass is not None:
+            leg = self.boarding_pass.legs[0]
+            fields.append(leg.airline_iata)
+            fields.append(leg.flight_number)
+            fields.append("-".join([leg.origin_iata, leg.destination_iata]))
+            if len(self.boarding_pass.legs) > 1:
+                fields.append(f"{len(self.boarding_pass.legs)}LEGS")
+        fields = [f for f in fields if f is not None]
+        return "_".join(fields) + ".pkpass"
+
+    def _boarding_pass(self) -> BoardingPass:
         if self.message is None:
             return None
         return BoardingPass(self.message, self.relevant_date)

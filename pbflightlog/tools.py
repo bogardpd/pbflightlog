@@ -138,20 +138,9 @@ def add_flight_pkpasses() -> None:
         if bp is None or not bp.valid:
             print("⚠️ The boarding pass data is not valid.")
             continue
-        flight = bp.legs[0]
-        print(flight)
-        archive_filename = (
-            f"{pkpass.relevant_date.strftime("%Y%m%dT%H%MZ")}"
-            f"_{flight.airline_iata}_{flight.flight_number}"
-            f"_{flight.origin_iata}-{flight.destination_iata}"
-            ".pkpass"
-        )
-
-        print(pkpass.relevant_date)
-        print(pkpass.message)
-        print(archive_filename)
+        print(bp.legs[0])
+        print(pkpass.archive_filename)
         print()
-
 
 def update_routes() -> None:
     """Refreshes the routes table."""

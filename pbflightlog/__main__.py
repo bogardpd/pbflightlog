@@ -27,7 +27,7 @@ if __name__ == "__main__":
         required=True, # Set to false if we create GUI add flight option
     )
     add_flight_source_group.add_argument("--bcbp",
-        help="Add a flight from a BCBP-coded text string",
+        help="Add flight(s) from a BCBP-coded text string",
         metavar="BCBP_TEXT",
         type=str,
     )

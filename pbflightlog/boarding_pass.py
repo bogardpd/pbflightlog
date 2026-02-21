@@ -1,7 +1,14 @@
 """Tools for interacting with boarding passes."""
 
 # Standard imports
+import json
 from datetime import datetime, date, timedelta
+from pathlib import Path
+from zoneinfo import ZoneInfo
+from zipfile import ZipFile
+
+# Third-party imports
+from dateutil.parser import isoparse
 
 class BoardingPass():
     """
@@ -263,6 +270,34 @@ class Leg():
         if raw is None:
             return None
         return raw.strip().lstrip("0") or "0"
+
+
+class PKPass():
+    """Represents an Apple Wallet PKPass boarding pass."""
+    PASS_FILE = "pass.json"
+
+    def __init__(self, path: Path):
+        self.pass_json = self._load_pass_json(path)
+        self.relevant_date = self._parse_relevant_date()
+        self.message = self.pass_json.get('barcode', {}).get('message')
+
+    def _load_pass_json(self, path) -> dict:
+        """Gets boarding pass JSON."""
+        with ZipFile(path, 'r') as zf:
+            if PKPass.PASS_FILE not in zf.namelist():
+                print(f"{PKPass.PASS_FILE} not found in {path}.")
+                return {}
+            with zf.open(PKPass.PASS_FILE) as pf:
+                return json.loads(pf.read().decode('utf-8'))
+
+    def _parse_relevant_date(self) -> datetime | None:
+        """Gets the PKPass date."""
+        try:
+            pass_date = isoparse(self.pass_json.get('relevantDate'))
+            return pass_date.astimezone(ZoneInfo("UTC"))
+        except TypeError, ValueError:
+            return None
+
 
 def _get_raw(bcbp_str, block_slice, field_slice):
     """Gets raw values for a field."""

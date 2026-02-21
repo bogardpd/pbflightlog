@@ -1,22 +1,18 @@
 """Functions for CLI commands."""
 
 # Standard imports
-import json
 import os
 import sys
-import zipfile
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 # Third-party imports
 import requests
 import pandas as pd
-from dateutil.parser import isoparse
 
 # Project imports
 import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
-from pbflightlog.boarding_pass import BoardingPass
+from pbflightlog.boarding_pass import BoardingPass, PKPass
 
 PASS_FILE = "pass.json" # Boarding pass filename within PKPass
 
@@ -139,36 +135,26 @@ def add_flight_pkpasses() -> None:
             "Environment variable FLIGHT_LOG_IMPORT_PATH is not a directory."
         )
     print(f"Importing digital boarding passes from {import_path}")
-    pkpasses = [f for f in import_path.glob("*.pkpass") if f.is_file()]
+    pkpasses = [
+        PKPass(f) for f in import_path.glob("*.pkpass")
+        if f.is_file()
+    ]
     for pkpass in pkpasses:
-        print(f"Processing {pkpass}")
-        with zipfile.ZipFile(pkpass, 'r') as z:
-            if PASS_FILE not in z.namelist():
-                print(
-                    f"⚠️ {PASS_FILE} not found in {pkpass}. Skipping this "
-                    "pass."
-                )
-                continue
-            with z.open(PASS_FILE) as pf:
-                pass_json = json.loads(pf.read().decode('utf-8'))
-        relevant_date = isoparse(pass_json.get('relevantDate')) \
-            .astimezone(ZoneInfo("UTC"))
-        message = pass_json.get('barcode', {}).get('message')
-        # TODO: Pass relevant_date to BoardingPass for year estimation
-        bp = BoardingPass(message)
+        # TODO: Pass pkpass.relevant_date to BoardingPass
+        bp = BoardingPass(pkpass.message)
         if not bp.valid:
             print("⚠️ The boarding pass data is not valid.")
             continue
         flight = bp.legs[0]
         archive_filename = (
-            f"{relevant_date.strftime("%Y%m%dT%H%MZ")}"
+            f"{pkpass.relevant_date.strftime("%Y%m%dT%H%MZ")}"
             f"_{flight.airline_iata}_{flight.flight_number}"
             f"_{flight.origin_iata}-{flight.destination_iata}"
             ".pkpass"
         )
 
-        print(relevant_date)
-        print(message)
+        print(pkpass.relevant_date)
+        print(pkpass.message)
         print(archive_filename)
 
 

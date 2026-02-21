@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 license = "MIT"
 dependencies = [
+    "dateutil>=2.8.0",
     "geopandas>=1.1.2",
     "pandas>-2.3.0",
     "pyproj>=3.7.0",

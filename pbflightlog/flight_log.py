@@ -151,6 +151,7 @@ class Flight(Record):
         self.aircraft_type_fid: int | None = None
         self.operator_fid: int | None = None
         self.tail_number: str | None = None
+        self.boarding_pass_data: str | None = None
         self.fh_id: int | None = None
         self.fa_flight_id: str | None = None
         self.fa_json: dict | None = None
@@ -215,6 +216,7 @@ class Flight(Record):
             'aircraft_type_fid': self.aircraft_type_fid,
             'operator_fid': self.operator_fid,
             'tail_number': self.tail_number,
+            'boarding_pass_data': self.boarding_pass_data,
             'fh_id': self.fh_id,
             'fa_flight_id': self.fa_flight_id,
             'fa_json': (

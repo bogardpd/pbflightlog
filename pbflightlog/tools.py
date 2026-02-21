@@ -12,7 +12,7 @@ import pandas as pd
 # Project imports
 import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
-from pbflightlog.boarding_pass import BoardingPass, PKPass
+from pbflightlog.boarding_pass import BoardingPass, PKPass, Leg
 
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
@@ -20,22 +20,7 @@ def add_flight_bcbp(bcbp_str) -> None:
     if not bp.valid or len(bp.legs) == 0:
         print("⚠️ The boarding pass data is not valid.")
         sys.exit(1)
-    if len(bp.legs) == 1:
-        selected_leg = bp.legs[0]
-    else:
-        selected_leg = bp.select_leg()
-    airline = fl.Airline.find_by_code(selected_leg.airline_iata)
-    if airline is not None and airline.icao_code is not None:
-        airline_code = airline.icao_code
-    else:
-        airline_code = selected_leg.airline_iata
-    ident = f"{airline_code}{selected_leg.flight_number}"
-    print(f"Looking up {ident}...")
-    fa_flights = aero.get_flights_ident(ident, "designator")
-    _add_fa_flight_results(fa_flights, {
-        'airline_fid': airline.fid,
-        'boarding_pass_data': bcbp_str,
-    })
+    _add_bp_leg(bp.select_leg())
     update_routes()
 
 def add_flight_fa_flight_id(fa_flight_id: str) -> None:
@@ -129,6 +114,21 @@ def add_flight_pkpasses() -> None:
 def update_routes() -> None:
     """Refreshes the routes table."""
     fl.update_routes()
+
+def _add_bp_leg(leg: Leg) -> str:
+    """Processes a boarding pass leg."""
+    airline = fl.Airline.find_by_code(leg.airline_iata)
+    if airline is not None and airline.icao_code is not None:
+        airline_code = airline.icao_code
+    else:
+        airline_code = leg.airline_iata
+    ident = f"{airline_code}{leg.flight_number}"
+    print(f"Looking up {ident}...")
+    fa_flights = aero.get_flights_ident(ident, "designator")
+    _add_fa_flight_results(fa_flights, {
+        'airline_fid': airline.fid,
+        'boarding_pass_data': leg.bcbp_str,
+    })
 
 def _add_fa_flight_results(fa_flights: dict, fields: dict = None) -> None:
     """Processes the results of an AeroAPI flights request."""

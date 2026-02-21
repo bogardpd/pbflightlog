@@ -212,9 +212,9 @@ class Leg():
     def __init__(self,
         bcbp_text: str, leg_blocks: dict, pass_dt: datetime | None = None
     ):
-        self._bcbp_text = bcbp_text
-        self._blocks = leg_blocks
-        self._pass_dt = pass_dt
+        self.bcbp_str: str = bcbp_text
+        self._blocks: dict = leg_blocks
+        self._pass_dt: datetime | None = pass_dt
         self.flight_date: date | None = self._parse_flight_date()
         self.airline_iata: str | None = self._parse_airline_iata()
         self.flight_number: str | None = self._parse_flight_number()
@@ -236,7 +236,7 @@ class Leg():
     def _parse_airline_iata(self) -> str | None:
         """Parses airline IATA code."""
         raw = _get_raw(
-            self._bcbp_text, self._blocks['mandatory'], slice(13, 16)
+            self.bcbp_str, self._blocks['mandatory'], slice(13, 16)
         )
         if raw is None:
             return None
@@ -245,7 +245,7 @@ class Leg():
     def _parse_airport_dest_iata(self) -> str | None:
         """Parses destination airport IATA code."""
         raw = _get_raw(
-            self._bcbp_text, self._blocks['mandatory'], slice(10, 13)
+            self.bcbp_str, self._blocks['mandatory'], slice(10, 13)
         )
         if raw is None:
             return None
@@ -254,7 +254,7 @@ class Leg():
     def _parse_airport_orig_iata(self) -> str | None:
         """Parses origin airport IATA code."""
         raw = _get_raw(
-            self._bcbp_text, self._blocks['mandatory'], slice(7, 10)
+            self.bcbp_str, self._blocks['mandatory'], slice(7, 10)
         )
         if raw is None:
             return None
@@ -263,7 +263,7 @@ class Leg():
     def _parse_flight_date(self) -> date | None:
         """Parses flight date."""
         raw = _get_raw(
-            self._bcbp_text, self._blocks['mandatory'], slice(21, 24)
+            self.bcbp_str, self._blocks['mandatory'], slice(21, 24)
         )
         try:
             day_of_year: int = int(raw)
@@ -321,7 +321,7 @@ class Leg():
     def _parse_flight_number(self) -> str | None:
         """Parses flight number."""
         raw = _get_raw(
-            self._bcbp_text, self._blocks['mandatory'], slice(16, 21)
+            self.bcbp_str, self._blocks['mandatory'], slice(16, 21)
         )
         if raw is None:
             return None

@@ -113,6 +113,7 @@ class BoardingPass():
         self.bcbp_str = bcbp_str
         self.data_len = len(self.bcbp_str)
         self.raw = {}
+        self.legs: list(Leg) = []
         self.valid = True
         self.version_number = None
         self._parse()
@@ -381,3 +382,19 @@ class BoardingPass():
             self.raw[fields[-1]['key']] = raw[offset:self.data_len]
             length = self.data_len - offset
         return length
+
+class Leg():
+    """Represents one flight leg of a boarding pass."""
+
+    def __init__(self):
+        self.flight_date: date | None = None
+        self.airline_iata: str | None = None
+        self.flight_number: str | None = None
+        self.origin_iata: str | None = None
+        self.destination_iata: str | None = None
+
+    def __str__(self):
+        return (
+            f"{self.flight_date} {self.airline_iata} {self.flight_number} "
+            f"{self.origin_iata}-{self.destination_iata}"
+        )

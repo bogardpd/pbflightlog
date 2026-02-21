@@ -113,7 +113,8 @@ class BoardingPass():
         self.bcbp_str = bcbp_str
         self.data_len = len(self.bcbp_str)
         self.leg_count = None
-        self.blocks = self._calculate_blocks()
+        self.blocks = None
+        self._calculate_blocks()
         self.raw = {}
         self.legs: list(Leg) = []
         self.valid = True
@@ -163,13 +164,14 @@ class BoardingPass():
 
         return leg_dates
 
-    def _calculate_blocks(self):
+    def _calculate_blocks(self) -> None:
         """
-        Builds a dict of block locations in the BCBP text.
+        Calculates block locations in the BCBP text.
 
-        Returns a dict with values containing slices of the start and
-        stop character indexes in the BCBP text for each block. Blocks
-        that are not present store a value of None instead of a slice.
+        Sets self.blocks to a dict with values containing slices of the
+        start and stop character indexes in the BCBP text for each
+        block. Blocks that are not present store a value of None instead
+        of a slice.
         """
         if len(self.bcbp_str) < 60:
             self.valid = False
@@ -183,42 +185,110 @@ class BoardingPass():
         except ValueError:
             self.valid = False
             return None
-        # Initialize blocks with values that are always present.
-        blocks = {
+
+        # Initialize blocks.
+        self.blocks = {
             'unique': {
                 'mandatory': slice(0, 23), # Always here
                 'conditional': None,
                 'security': None,
             },
-            "repeated": [
-                {
-                    'mandatory': slice(23, 60), # Always here leg 1
-                    'conditional': None,
-                    'airline': None,
-                }
-            ],
+            'repeated': []
         }
-        # Get leg 1 conditional and airline blocks. Leg 1 also contains
-        # the unique conditional block.
-        cond_airline_1_size = _parse_hex(self.bcbp_str[58:60])
-        if cond_airline_1_size is None:
-            self.valid = False
-            return blocks
-        if cond_airline_1_size < 4:
-            # Conditional Unique not big enough to contain size field
-            blocks['unique']['conditional'] = slice(
-                60, 60 + cond_airline_1_size
-            )
-            return blocks
-        mand_uniq_size = _parse_hex(self.bcbp_str[62:64])
-        if mand_uniq_size is None:
-            self.valid = False
-            return blocks
-        blocks['unique']['conditional'] = slice(
-            60, 64 + mand_uniq_size
-        )
-        return blocks
 
+        # Loop through legs.
+        for leg_index in range(self.leg_count):
+            self.blocks['repeated'].append({
+                'mandatory': None,
+                'conditional': None,
+                'airline': None,
+            })
+
+            # Mandatory Repeated block
+            mand_rept_start = self._prev_leg_stop(leg_index)
+            mand_rept_stop = mand_rept_start + 37 # Always 37 characters
+            if mand_rept_stop > self.data_len:
+                self.valid = False
+                return
+            self.blocks['repeated'][leg_index]['mandatory'] = slice(
+                mand_rept_start, mand_rept_stop
+            )
+            cond_airline_size = _parse_hex(
+                self.bcbp_str[mand_rept_stop - 2:mand_rept_stop])
+            if cond_airline_size is None:
+                self.valid = False
+                return
+            if cond_airline_size == 0:
+                # No conditional or airline items.
+                continue
+            leg_stop = mand_rept_stop + cond_airline_size
+            if leg_stop > self.data_len:
+                self.valid = False
+                return
+
+            # Conditional Unique block (first leg only)
+            if leg_index == 0:
+                if cond_airline_size < 4:
+                    # Conditional Unique not big enough to contain size
+                    # field
+                    self.blocks['unique']['conditional'] = slice(
+                        mand_rept_stop, mand_rept_start + cond_airline_size
+                    )
+                    continue
+                cond_uniq_size = _parse_hex(
+                    self.bcbp_str[mand_rept_stop + 2:mand_rept_stop + 4]
+                )
+                if cond_uniq_size is None:
+                    self.valid = False
+                    return
+                cond_rept_start = mand_rept_stop + 4 + cond_uniq_size
+                if cond_rept_start > self.data_len:
+                    self.valid = False
+                    return
+                self.blocks['unique']['conditional'] = slice(
+                    mand_rept_stop, cond_rept_start
+                )
+            else:
+                cond_rept_start = mand_rept_stop
+
+            # Conditional Repeated block
+            if cond_rept_start == leg_stop:
+                # No more data.
+                continue
+            if cond_rept_start + 2 > leg_stop:
+                # Conditional not big enough to contain Conditional
+                # Repeated size field.
+                self.blocks['repeated'][leg_index]['conditional'] = slice(
+                    cond_rept_start, leg_stop
+                )
+            cond_rept_size = _parse_hex(
+                self.bcbp_str[cond_rept_start:cond_rept_start + 2]
+            )
+            if cond_rept_size is None:
+                self.valid = False
+                return
+            cond_rept_stop = cond_rept_start + 2 + cond_rept_size
+            if cond_rept_stop > self.data_len:
+                self.valid = False
+                return
+            self.blocks['repeated'][leg_index]['conditional'] = slice(
+                cond_rept_start, cond_rept_stop
+            )
+
+            # Airline Repeated block
+            if cond_rept_stop == leg_stop:
+                # No more data.
+                continue
+            self.blocks['repeated'][leg_index]['airline'] = slice(
+                cond_rept_stop, leg_stop
+            )
+
+        # Security block
+        security_start = self._prev_leg_stop(self.leg_count)
+        if security_start < self.data_len:
+            self.blocks['unique']['security'] = slice(
+                security_start, self.data_len
+            )
 
     def _parse(self):
         """Parses a boarding pass and returns a dict."""
@@ -441,6 +511,21 @@ class BoardingPass():
             self.raw[fields[-1]['key']] = raw[offset:self.data_len]
             length = self.data_len - offset
         return length
+
+    def _prev_leg_stop(self, leg_index):
+        """Gets the index of the stop of the previous leg."""
+        if leg_index == 0:
+            # Use end of mandatory unique block.
+            return self.blocks['unique']['mandatory'].stop
+        prev_leg = self.blocks['repeated'][leg_index - 1]
+        if prev_leg['airline'] is not None:
+            return prev_leg['airline'].stop
+        if prev_leg['conditional'] is not None:
+            return prev_leg['conditional'].stop
+        if leg_index == 1 and self.blocks['unique']['conditional'] is not None:
+            return self.blocks['unique']['conditional'].stop
+        return prev_leg['mandatory'].stop
+
 
 class Leg():
     """Represents one flight leg of a boarding pass."""

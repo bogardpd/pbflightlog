@@ -203,6 +203,15 @@ class Flight(Record):
         except TypeError, ValueError:
             print(f"⚠️ No distance found for {self.fa_flight_id}.")
 
+    def exit_if_not_complete(self) -> None:
+        """Exits if this flight is not complete."""
+        if self.progress is None or self.progress < 100:
+            print(
+                f"⚠️ Flight is not complete ({self.progress}% complete). "
+                "Flight was not added to log."
+            )
+            sys.exit(1)
+
     def gdf(self) -> gpd.GeoDataFrame:
         """Returns a GeoDataFrame record for the flight."""
         record = {

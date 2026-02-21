@@ -12,7 +12,7 @@ import pandas as pd
 # Project imports
 import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
-from pbflightlog.boarding_pass import BoardingPass, PKPass, Leg
+from pbflightlog.boarding_pass import BoardingPass, PKPass
 
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
@@ -20,7 +20,7 @@ def add_flight_bcbp(bcbp_str) -> None:
     if not bp.valid or len(bp.legs) == 0:
         print("⚠️ The boarding pass data is not valid.")
         sys.exit(1)
-    _add_bp_leg(bp.select_leg())
+    _add_bp_flights(bp)
     update_routes()
 
 def add_flight_fa_flight_id(fa_flight_id: str) -> None:
@@ -115,35 +115,31 @@ def update_routes() -> None:
     """Refreshes the routes table."""
     fl.update_routes()
 
-def _add_bp_leg(leg: Leg) -> str:
-    """Processes a boarding pass leg."""
-    airline = fl.Airline.find_by_code(leg.airline_iata)
-    if airline is not None and airline.icao_code is not None:
-        airline_code = airline.icao_code
-    else:
-        airline_code = leg.airline_iata
-    ident = f"{airline_code}{leg.flight_number}"
-    print(f"Looking up {ident}...")
-    fa_flights = aero.get_flights_ident(ident, "designator")
-    _add_fa_flight_results(fa_flights, {
-        'airline_fid': airline.fid,
-        'boarding_pass_data': leg.bcbp_str,
-    })
+def _add_bp_flights(bp: BoardingPass) -> None:
+    """Builds Flights from a BoardingPass, and saves them."""
+    # Build list of boarding pass flights.
+    bp_flights: list(fl.Flight) = []
+    for leg in bp.legs:
+        airline = fl.Airline.find_by_code(leg.airline_iata)
+        if airline is not None and airline.icao_code is not None:
+            airline_code = airline.icao_code
+        else:
+            airline_code = leg.airline_iata
+        ident = f"{airline_code}{leg.flight_number}"
+        print(f"Looking up {ident}...")
+        aero_results = aero.get_flights_ident(ident, "designator")
+        flight = _flight_from_aeroapi_results(aero_results)
+        flight.airline_fid = airline.fid
+        flight.boarding_pass_data = leg.bcbp_str
+        bp_flights.append(flight)
 
-def _add_fa_flight_results(fa_flights: dict, fields: dict = None) -> None:
+    # Save flights.
+    for flight in bp_flights:
+        flight.save()
+
+def _add_fa_flight_results(aero_results: dict, fields: dict = None) -> None:
     """Processes the results of an AeroAPI flights request."""
-    if len(fa_flights) == 0:
-        print("No matching flights found.")
-        sys.exit(1)
-    flights = [fl.Flight.from_aeroapi(f) for f in fa_flights]
-    flight = fl.Flight.select_flight(flights)
-    if flight.progress is None or flight.progress < 100:
-        print(
-            f"⚠️ Flight is not complete ({flight.progress}% complete). "
-            "Flight was not added to log."
-        )
-        sys.exit(1)
-    flight.fetch_aeroapi_track_geometry()
+    flight = _flight_from_aeroapi_results(aero_results)
 
     # Set provided fields
     if fields is not None:
@@ -151,3 +147,14 @@ def _add_fa_flight_results(fa_flights: dict, fields: dict = None) -> None:
             setattr(flight, key, value)
 
     flight.save()
+
+def _flight_from_aeroapi_results(aero_results) -> fl.Flight:
+    """Has user select flight from AeroAPI results and gets geometry."""
+    if len(aero_results) == 0:
+        print("No matching flights found.")
+        sys.exit(1)
+    fa_flights = [fl.Flight.from_aeroapi(f) for f in aero_results]
+    flight = fl.Flight.select_flight(fa_flights)
+    flight.exit_if_not_complete()
+    flight.fetch_aeroapi_track_geometry()
+    return flight

@@ -23,31 +23,19 @@ PASS_FILE = "pass.json" # Boarding pass filename within PKPass
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
     bp = BoardingPass(bcbp_str)
-    if not bp.valid:
+    if not bp.valid or len(bp.legs) == 0:
         print("⚠️ The boarding pass data is not valid.")
         sys.exit(1)
-    print(bp.legs)
-    quit()
-    flight_dates = bp.flight_dates
-    legs = [
-        {
-            'airline_iata': leg.get('operating_carrier').strip(),
-            'flight_number': leg.get('flight_number').strip(),
-            'orig_iata': leg.get('from_airport').strip(),
-            'dest_iata': leg.get('to_airport').strip(),
-            'flight_date': flight_dates[i],
-        } for i, leg in enumerate(bp.raw['legs'])
-    ]
-    if len(legs) == 1:
-        selected_leg = legs[0]
+    if len(bp.legs) == 1:
+        selected_leg = bp.legs[0]
     else:
         # Select a leg.
         selected_leg = None
-        for i, leg in enumerate(legs):
+        for i, leg in enumerate(bp.legs):
             print(
-                f"Leg {i + 1}: {leg.get('flight_date')} "
-                f"{leg.get('airline_iata')} {leg.get('flight_number')} "
-                f"{leg.get('orig_iata')} → {leg.get('dest_iata')}"
+                f"Leg {i + 1}: {leg.flight_date} "
+                f"{leg.airline_iata} {leg.flight_number} "
+                f"{leg.origin_iata} → {leg.destination_iata}"
             )
         while selected_leg is None:
             choice = input("Select a leg number (or Q to quit): ")
@@ -58,17 +46,16 @@ def add_flight_bcbp(bcbp_str) -> None:
                 if row_index < 0:
                     print("Invalid leg number.")
                     continue
-                selected_leg = legs[row_index]
+                selected_leg = bp.legs[row_index]
             except IndexError, ValueError:
                 print("Invalid leg number.")
 
-    airline = fl.Airline.find_by_code(selected_leg.get('airline_iata'))
+    airline = fl.Airline.find_by_code(selected_leg.airline_iata)
     if airline is not None and airline.icao_code is not None:
         airline_code = airline.icao_code
     else:
-        airline_code = selected_leg.get('airline_iata')
-    flight_number = selected_leg.get('flight_number').lstrip("0") or "0"
-    ident = f"{airline_code}{flight_number}"
+        airline_code = selected_leg.airline_iata
+    ident = f"{airline_code}{selected_leg.flight_number}"
     print(f"Looking up {ident}...")
     fa_flights = aero.get_flights_ident(ident, "designator")
     _add_fa_flight_results(fa_flights, {

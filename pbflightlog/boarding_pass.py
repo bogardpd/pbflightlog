@@ -625,7 +625,7 @@ class Leg():
         )
         if raw is None:
             return None
-        return raw.strip().lstrip("0")
+        return raw.strip().lstrip("0") or "0"
 
 def _get_raw(bcbp_str, block_slice, field_slice):
     """Gets raw values for a field."""

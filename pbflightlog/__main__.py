@@ -65,14 +65,14 @@ if __name__ == "__main__":
     if args.command == "add":
         if args.entity == "flight":
             if args.bcbp is not None:
-                flt.parse_bcbp(args.bcbp)
+                flt.add_flight_bcbp(args.bcbp)
             elif args.fa_flight_id is not None:
-                flt.add_fa_flight_id(args.fa_flight_id)
+                flt.add_flight_fa_flight_id(args.fa_flight_id)
             elif args.flight_number is not None:
                 flt.add_flight_number(*args.flight_number)
             elif args.pkpasses:
-                flt.import_boarding_passes()
+                flt.add_flight_pkpasses()
             elif args.recent:
-                flt.import_recent()
+                flt.add_flight_fh_recent()
     elif args.command == "update-routes":
         flt.update_routes()

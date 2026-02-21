@@ -13,32 +13,32 @@ import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
 from pbflightlog.boarding_pass import BoardingPass
 
-def add_fa_flight_id(fa_flight_id: str) -> None:
+def add_flight_bcbp(bcbp_str) -> None:
+    """Parses a Bar-Coded Boarding Pass string."""
+    bp = BoardingPass(bcbp_str)
+    if not bp.valid:
+        print("⚠️ The boarding pass data is not valid.")
+        sys.exit(1)
+    flight_dates = bp.flight_dates
+    for leg_index, leg in enumerate(bp.raw['legs']):
+        airline_iata = leg['operating_carrier'].strip()
+        flight_number = leg['flight_number'].strip()
+        orig_iata = leg['from_airport'].strip()
+        dest_iata = leg['to_airport'].strip()
+        print(
+            f"Leg {leg_index + 1}: {flight_dates[leg_index]} "
+            f"{airline_iata} {flight_number} "
+            f"{orig_iata} → {dest_iata}"
+        )
+
+def add_flight_fa_flight_id(fa_flight_id: str) -> None:
     """Gets info for a fa_flight_id and saves flight to log."""
     print(f"Looking up {fa_flight_id}...")
     fa_flights = aero.get_flights_ident(fa_flight_id, "fa_flight_id")
     _add_fa_flight_results(fa_flights)
     update_routes()
 
-def add_flight_number(airline_code: str, flight_number: str) -> None:
-    """Gets info for a flight number and logs the flight."""
-    airline = fl.Airline.find_by_code(airline_code)
-    # If airline is IATA, try to look up ICAO.
-    if len(airline_code) == 2:
-        if airline is not None and airline.icao_code is not None:
-            airline_code = airline.icao_code
-    ident = f"{airline_code}{flight_number}"
-    print(f"Looking up {ident}...")
-    fa_flights = aero.get_flights_ident(ident, "designator")
-    _add_fa_flight_results(fa_flights, {'airline_fid': airline.fid})
-    update_routes()
-
-
-def import_boarding_passes():
-    """Imports digital boarding passes."""
-    print("Importing digital boarding passes...")
-
-def import_recent():
+def add_flight_fh_recent() -> None:
     """Finds recent flights on Flight Historian API and imports them."""
     api_key_fh = os.getenv("FLIGHT_HISTORIAN_API_KEY")
     if api_key_fh is None:
@@ -78,25 +78,24 @@ def import_recent():
     if update_flag:
         update_routes()
 
-def parse_bcbp(bcbp_str):
-    """Parses a Bar-Coded Boarding Pass string."""
-    bp = BoardingPass(bcbp_str)
-    if not bp.valid:
-        print("⚠️ The boarding pass data is not valid.")
-        sys.exit(1)
-    flight_dates = bp.flight_dates
-    for leg_index, leg in enumerate(bp.raw['legs']):
-        airline_iata = leg['operating_carrier'].strip()
-        flight_number = leg['flight_number'].strip()
-        orig_iata = leg['from_airport'].strip()
-        dest_iata = leg['to_airport'].strip()
-        print(
-            f"Leg {leg_index + 1}: {flight_dates[leg_index]} "
-            f"{airline_iata} {flight_number} "
-            f"{orig_iata} → {dest_iata}"
-        )
+def add_flight_number(airline_code: str, flight_number: str) -> None:
+    """Gets info for a flight number and logs the flight."""
+    airline = fl.Airline.find_by_code(airline_code)
+    # If airline is IATA, try to look up ICAO.
+    if len(airline_code) == 2:
+        if airline is not None and airline.icao_code is not None:
+            airline_code = airline.icao_code
+    ident = f"{airline_code}{flight_number}"
+    print(f"Looking up {ident}...")
+    fa_flights = aero.get_flights_ident(ident, "designator")
+    _add_fa_flight_results(fa_flights, {'airline_fid': airline.fid})
+    update_routes()
 
-def update_routes():
+def add_flight_pkpasses() -> None:
+    """Imports digital boarding passes."""
+    print("Importing digital boarding passes...")
+
+def update_routes() -> None:
     """Refreshes the routes table."""
     fl.update_routes()
 

@@ -159,9 +159,11 @@ def add_flight_pkpasses() -> None:
         if not bp.valid:
             print("⚠️ The boarding pass data is not valid.")
             continue
-        airline = bp.raw['legs'][0].get('operating_carrier').strip()
+        flight = bp.legs[0]
         archive_filename = (
-            f"{relevant_date.strftime("%Y%m%dT%H%MZ")}_{airline}"
+            f"{relevant_date.strftime("%Y%m%dT%H%MZ")}"
+            f"_{flight.airline_iata}_{flight.flight_number}"
+            f"_{flight.origin_iata}-{flight.destination_iata}"
             ".pkpass"
         )
 

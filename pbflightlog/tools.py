@@ -1,17 +1,24 @@
 """Functions for CLI commands."""
 
 # Standard imports
+import json
 import os
 import sys
+import zipfile
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 # Third-party imports
 import requests
 import pandas as pd
+from dateutil.parser import isoparse
 
 # Project imports
 import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
 from pbflightlog.boarding_pass import BoardingPass
+
+PASS_FILE = "pass.json" # Boarding pass filename within PKPass
 
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
@@ -131,7 +138,48 @@ def add_flight_number(airline_code: str, flight_number: str) -> None:
 
 def add_flight_pkpasses() -> None:
     """Imports digital boarding passes."""
-    print("Importing digital boarding passes...")
+
+    import_folder = os.getenv("FLIGHT_LOG_IMPORT_PATH")
+    if import_folder is None:
+        raise KeyError(
+            "Environment variable FLIGHT_LOG_IMPORT_PATH is missing."
+        )
+    import_path = Path(import_folder)
+    if not import_path.is_dir():
+        raise KeyError(
+            "Environment variable FLIGHT_LOG_IMPORT_PATH is not a directory."
+        )
+    print(f"Importing digital boarding passes from {import_path}")
+    pkpasses = [f for f in import_path.glob("*.pkpass") if f.is_file()]
+    for pkpass in pkpasses:
+        print(f"Processing {pkpass}")
+        with zipfile.ZipFile(pkpass, 'r') as z:
+            if PASS_FILE not in z.namelist():
+                print(
+                    f"⚠️ {PASS_FILE} not found in {pkpass}. Skipping this "
+                    "pass."
+                )
+                continue
+            with z.open(PASS_FILE) as pf:
+                pass_json = json.loads(pf.read().decode('utf-8'))
+        relevant_date = isoparse(pass_json.get('relevantDate')) \
+            .astimezone(ZoneInfo("UTC"))
+        message = pass_json.get('barcode', {}).get('message')
+        # TODO: Pass relevant_date to BoardingPass for year estimation
+        bp = BoardingPass(message)
+        if not bp.valid:
+            print("⚠️ The boarding pass data is not valid.")
+            continue
+        airline = bp.raw['legs'][0].get('operating_carrier').strip()
+        archive_filename = (
+            f"{relevant_date.strftime("%Y%m%dT%H%MZ")}_{airline}"
+            ".pkpass"
+        )
+
+        print(relevant_date)
+        print(message)
+        print(archive_filename)
+
 
 def update_routes() -> None:
     """Refreshes the routes table."""

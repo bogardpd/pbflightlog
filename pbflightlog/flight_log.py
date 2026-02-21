@@ -11,7 +11,6 @@ from typing import Self
 from zoneinfo import ZoneInfo
 
 # Third-party imports
-import colorama
 import geopandas as gpd
 import pandas as pd
 from dateutil.parser import isoparse
@@ -27,8 +26,6 @@ METERS_PER_HUNDRED_FEET = 30.48
 METERS_BETWEEN_GC_POINTS = 100000
 
 CRS = "EPSG:4326" # WGS-84
-
-colorama.init()
 
 flight_log = os.getenv("FLIGHT_LOG_GEOPACKAGE_PATH")
 if flight_log is None:

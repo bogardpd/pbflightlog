@@ -193,14 +193,14 @@ class Leg():
 
     def __repr__(self):
         return (
-            f"{self.flight_date} {self.airline_iata} {self.flight_number} "
-            f"{self.origin_iata}-{self.destination_iata}"
+            f"Leg({self.flight_date} {self.airline_iata} {self.flight_number} "
+            f"{self.origin_iata} → {self.destination_iata})"
         )
 
     def __str__(self):
         return (
             f"{self.flight_date} {self.airline_iata} {self.flight_number} "
-            f"{self.origin_iata}-{self.destination_iata}"
+            f"{self.origin_iata} → {self.destination_iata}"
         )
 
     def _parse_airline_iata(self) -> str | None:

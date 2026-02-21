@@ -26,11 +26,8 @@ def add_flight_bcbp(bcbp_str) -> None:
         # Select a leg.
         selected_leg = None
         for i, leg in enumerate(bp.legs):
-            print(
-                f"Leg {i + 1}: {leg.flight_date} "
-                f"{leg.airline_iata} {leg.flight_number} "
-                f"{leg.origin_iata} → {leg.destination_iata}"
-            )
+            print(f"Leg {i + 1}: {leg}")
+        quit()
         while selected_leg is None:
             choice = input("Select a leg number (or Q to quit): ")
             if choice.upper() == "Q":

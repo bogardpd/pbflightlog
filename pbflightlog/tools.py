@@ -25,7 +25,6 @@ def add_flight_bcbp(bcbp_str) -> None:
 
 def add_flight_fa_flight_id(fa_flight_id: str) -> None:
     """Gets info for a fa_flight_id and saves flight to log."""
-    print(f"Looking up {fa_flight_id}...")
     fa_flights = aero.get_flights_ident(fa_flight_id, "fa_flight_id")
     _add_fa_flight_results(fa_flights)
     update_routes()
@@ -79,7 +78,6 @@ def add_flight_number(airline_code: str, flight_number: str) -> None:
             airline_code = airline.icao_code
     flight_number = flight_number.lstrip("0") or "0"
     ident = f"{airline_code}{flight_number}"
-    print(f"Looking up {ident}...")
     fa_flights = aero.get_flights_ident(ident, "designator")
     _add_fa_flight_results(fa_flights, {'airline_fid': airline.fid})
     update_routes()
@@ -120,13 +118,13 @@ def _add_bp_flights(bp: BoardingPass) -> None:
     # Build list of boarding pass flights.
     bp_flights: list(fl.Flight) = []
     for leg in bp.legs:
+        print(f"Processing leg \"{leg}\"")
         airline = fl.Airline.find_by_code(leg.airline_iata)
         if airline is not None and airline.icao_code is not None:
             airline_code = airline.icao_code
         else:
             airline_code = leg.airline_iata
         ident = f"{airline_code}{leg.flight_number}"
-        print(f"Looking up {ident}...")
         aero_results = aero.get_flights_ident(ident, "designator")
         flight = _flight_from_aeroapi_results(aero_results)
         flight.airline_fid = airline.fid

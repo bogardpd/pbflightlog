@@ -47,6 +47,7 @@ _rate_limiter = AeroAPIRateLimiter()
 
 def get_flights_ident(ident, ident_type=None):
     """Gets flights matching an ident."""
+    print(f"Looking up \"{ident}\" on AeroAPI")
     url = f"{SERVER}/flights/{ident}"
     headers = {'x-apikey': _API_KEY}
     params = {'ident_type': ident_type}

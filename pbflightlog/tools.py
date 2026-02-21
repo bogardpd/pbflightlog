@@ -27,7 +27,6 @@ def add_flight_bcbp(bcbp_str) -> None:
         selected_leg = None
         for i, leg in enumerate(bp.legs):
             print(f"Leg {i + 1}: {leg}")
-        quit()
         while selected_leg is None:
             choice = input("Select a leg number (or Q to quit): ")
             if choice.upper() == "Q":
@@ -135,12 +134,12 @@ def add_flight_pkpasses() -> None:
         if f.is_file()
     ]
     for pkpass in pkpasses:
-        # TODO: Pass pkpass.relevant_date to BoardingPass
-        bp = BoardingPass(pkpass.message)
-        if not bp.valid:
+        bp = pkpass.boarding_pass
+        if bp is None or not bp.valid:
             print("⚠️ The boarding pass data is not valid.")
             continue
         flight = bp.legs[0]
+        print(flight)
         archive_filename = (
             f"{pkpass.relevant_date.strftime("%Y%m%dT%H%MZ")}"
             f"_{flight.airline_iata}_{flight.flight_number}"
@@ -151,6 +150,7 @@ def add_flight_pkpasses() -> None:
         print(pkpass.relevant_date)
         print(pkpass.message)
         print(archive_filename)
+        print()
 
 
 def update_routes() -> None:

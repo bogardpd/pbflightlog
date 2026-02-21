@@ -1,8 +1,9 @@
 """Tools for interacting with boarding passes."""
 
 # Standard imports
+import calendar
 import json
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from zipfile import ZipFile
@@ -17,12 +18,13 @@ class BoardingPass():
     This class only encodes data that the flight log uses. Many IATA
     BCBP fields are intentionally excluded.
     """
-    def __init__(self, bcbp_str):
-        self.bcbp_str = bcbp_str
-        self.valid = True
-        self._data_len = len(self.bcbp_str)
-        self._leg_count = None
-        self._blocks = None
+    def __init__(self, bcbp_str: str, pass_dt:datetime=None):
+        self.bcbp_str: str = bcbp_str
+        self.valid: bool = True
+        self.pass_dt: datetime | None = pass_dt
+        self._data_len: int = len(self.bcbp_str)
+        self._leg_count: int = 0
+        self._blocks: dict | None = None
         self._calculate_blocks()
         self.legs: list(Leg) = self._legs()
 
@@ -158,7 +160,7 @@ class BoardingPass():
     def _legs(self) -> list(Leg):
         """Returns Leg objects for each leg."""
         return [
-            Leg(self.bcbp_str, self._blocks['repeated'][i])
+            Leg(self.bcbp_str, self._blocks['repeated'][i], self.pass_dt)
             for i in range(self._leg_count)
         ]
 
@@ -182,9 +184,12 @@ class BoardingPass():
 class Leg():
     """Represents one flight leg of a boarding pass."""
 
-    def __init__(self, bcbp_text: str, leg_blocks: dict):
+    def __init__(self,
+        bcbp_text: str, leg_blocks: dict, pass_dt: datetime | None = None
+    ):
         self._bcbp_text = bcbp_text
         self._blocks = leg_blocks
+        self._pass_dt = pass_dt
         self.flight_date: date | None = self._parse_flight_date()
         self.airline_iata: str | None = self._parse_airline_iata()
         self.flight_number: str | None = self._parse_flight_number()
@@ -236,31 +241,57 @@ class Leg():
             self._bcbp_text, self._blocks['mandatory'], slice(21, 24)
         )
         try:
-            date_ordinal: int = int(raw)
-            if date_ordinal > 366 or date_ordinal < 1:
+            day_of_year: int = int(raw)
+            if day_of_year > 366 or day_of_year < 1:
                 return None
         except TypeError, ValueError:
             return None
-        # Assume flight is up to 3 days in the future, or else the
-        # most recent date matching this ordinal in the past.
-        latest_dt = datetime.now() + timedelta(days=3)
-        latest_dt_year = latest_dt.timetuple().tm_year
-        latest_date = latest_dt.date()
-        # Loop through years in reverse trying to find a good date.
-        # Searches 8 years since leap years can be up to 8 years apart.
-        for year in range(latest_dt_year, latest_dt_year-8, -1):
-            test_date = date(year, 1, 1) + timedelta(days=date_ordinal-1)
-            if test_date.year != year:
-                # The ordinal was larger than the number of days
-                # this year, probably due to no leap year.
-                continue
-            if test_date > latest_date:
-                # The date this year is more than three days in the
-                # future.
-                continue
-            # This is the most recent date that works.
-            return test_date
-        return None
+        if self._pass_dt is None:
+            # Assume flight is up to 3 days in the future, or else the
+            # most recent date matching this ordinal in the past.
+            latest_dt = datetime.now() + timedelta(days=3)
+            latest_dt_year = latest_dt.timetuple().tm_year
+            latest_date = latest_dt.date()
+            # Loop through years in reverse trying to find a good date.
+            # Searches 8 years since leap years can be up to 8 years apart.
+            for year in range(latest_dt_year, latest_dt_year-8, -1):
+                test_date = _ordinal_date(year, day_of_year)
+                if test_date is None or test_date.year != year:
+                    # The ordinal was larger than the number of days
+                    # this year, probably due to no leap year.
+                    continue
+                if test_date > latest_date:
+                    # The date this year is more than three days in the
+                    # future.
+                    continue
+                # This is the most recent date that works.
+                return test_date
+            return None
+
+        # Use pass_dt to figure out the year.
+        # Because the timezone of the departure airport is not known,
+        # the departure date in the local time of the departure airport
+        # could potentially be the year before or after the UTC
+        # pass_dt's year. Look at all three years and see which date is
+        # closest to pass_dt.
+        utc_year = self._pass_dt.year
+        years = [utc_year - 1, utc_year, utc_year + 1]
+        if day_of_year == 366:
+            # Eliminate non-leap-years.
+            years = [y for y in years if calendar.isleap(y)]
+            if len(years) == 0:
+                # No adjacent year is a leap year.
+                return None
+        # Create dates to check.
+        dates = [_ordinal_date(y, day_of_year) for y in years]
+        # Create a dictionary of date indexes and their differences from
+        # the pass date.
+        date_diffs = {
+            i: abs(d - self._pass_dt.date())
+            for i, d in enumerate(dates)
+        }
+        # Get date with smallest difference.
+        return dates[min(date_diffs, key=date_diffs.get)]
 
     def _parse_flight_number(self) -> str | None:
         """Parses flight number."""
@@ -281,6 +312,12 @@ class PKPass():
         self.relevant_date = self._parse_relevant_date()
         self.message = self.pass_json.get('barcode', {}).get('message')
 
+    @property
+    def boarding_pass(self) -> BoardingPass:
+        if self.message is None:
+            return None
+        return BoardingPass(self.message, self.relevant_date)
+
     def _load_pass_json(self, path) -> dict:
         """Gets boarding pass JSON."""
         with ZipFile(path, 'r') as zf:
@@ -298,7 +335,6 @@ class PKPass():
         except TypeError, ValueError:
             return None
 
-
 def _get_raw(bcbp_str, block_slice, field_slice):
     """Gets raw values for a field."""
     if block_slice is None:
@@ -310,6 +346,14 @@ def _get_raw(bcbp_str, block_slice, field_slice):
     if chars.stop > block_slice.stop:
         return None
     return bcbp_str[chars]
+
+def _ordinal_date(year: int, day_of_year: int):
+    """Creates a date from a year and day of year."""
+    if day_of_year < 1 or day_of_year > 366:
+        return None
+    if day_of_year == 366 and not calendar.isleap(year):
+        return None
+    return date(year, 1, 1) + timedelta(days=day_of_year-1)
 
 def _parse_hex(hex_str) -> int | None:
     """Parses a hexadecimal string."""

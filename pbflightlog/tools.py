@@ -23,23 +23,7 @@ def add_flight_bcbp(bcbp_str) -> None:
     if len(bp.legs) == 1:
         selected_leg = bp.legs[0]
     else:
-        # Select a leg.
-        selected_leg = None
-        for i, leg in enumerate(bp.legs):
-            print(f"Leg {i + 1}: {leg}")
-        while selected_leg is None:
-            choice = input("Select a leg number (or Q to quit): ")
-            if choice.upper() == "Q":
-                sys.exit(0)
-            try:
-                row_index = int(choice) - 1
-                if row_index < 0:
-                    print("Invalid leg number.")
-                    continue
-                selected_leg = bp.legs[row_index]
-            except IndexError, ValueError:
-                print("Invalid leg number.")
-
+        selected_leg = bp.select_leg()
     airline = fl.Airline.find_by_code(selected_leg.airline_iata)
     if airline is not None and airline.icao_code is not None:
         airline_code = airline.icao_code

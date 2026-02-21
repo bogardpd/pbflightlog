@@ -3,7 +3,8 @@
 # Standard imports
 import calendar
 import json
-from datetime import datetime, date, time, timedelta
+import sys
+from datetime import datetime, date, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from zipfile import ZipFile
@@ -30,6 +31,30 @@ class BoardingPass():
 
     def __str__(self):
         return self.bcbp_str.replace(" ", "·")
+
+    def select_leg(self) -> Leg:
+        """
+        Prompts the user to select a leg.
+
+        If the pass only has one leg, that leg is automatically
+        returned.
+        """
+        if self._leg_count == 1:
+            return self.legs[0]
+        for i, leg in enumerate(self.legs):
+            print(f"Leg {i + 1}: {leg}")
+        while True:
+            choice = input("Select a leg number (or Q to quit): ")
+            if choice.upper() == "Q":
+                sys.exit(0)
+            try:
+                row_index = int(choice) - 1
+                if row_index < 0:
+                    print("Invalid leg number.")
+                    continue
+                return self.legs[row_index]
+            except IndexError, ValueError:
+                print("Invalid leg number.")
 
     def _calculate_blocks(self) -> None:
         """

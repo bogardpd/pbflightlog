@@ -16,7 +16,6 @@ import pandas as pd
 from dateutil.parser import isoparse
 from pyproj import Geod
 from shapely.geometry import Point, LineString, MultiLineString
-from tabulate import tabulate
 
 # Project imports
 import pbflightlog.aeroapi as aero

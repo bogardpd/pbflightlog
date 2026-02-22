@@ -80,7 +80,7 @@ class Record():
                 for key, value in record_dict.items():
                     setattr(record, key, value)
                 return record
-        print(f"⚠️ Could not find {cls} matching {code}.")
+        print(f"⚠️ Could not find {cls.__name__} matching \"{code}\".")
         return None
 
 class AircraftType(Record):

@@ -17,9 +17,6 @@ from pbflightlog.boarding_pass import BoardingPass, PKPass
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
     bp = BoardingPass(bcbp_str)
-    if not bp.valid or len(bp.legs) == 0:
-        print("⚠️ The boarding pass data is not valid.")
-        sys.exit(1)
     _add_bp_flights(bp)
     update_routes()
 
@@ -102,12 +99,9 @@ def add_flight_pkpasses() -> None:
     ]
     for pkpass in pkpasses:
         bp = pkpass.boarding_pass
-        if bp is None or not bp.valid:
-            print("⚠️ The boarding pass data is not valid.")
-            continue
-        print(bp.legs[0])
+        _add_bp_flights(bp)
         print(pkpass.archive_filename)
-        print()
+    update_routes()
 
 def update_routes() -> None:
     """Refreshes the routes table."""
@@ -115,6 +109,10 @@ def update_routes() -> None:
 
 def _add_bp_flights(bp: BoardingPass) -> None:
     """Builds Flights from a BoardingPass, and saves them."""
+    if not bp.valid or len(bp.legs) == 0:
+        print("⚠️ The boarding pass data is not valid.")
+        sys.exit(1)
+
     # Build list of boarding pass flights.
     bp_flights: list(fl.Flight) = []
     for leg in bp.legs:

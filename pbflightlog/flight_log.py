@@ -471,13 +471,10 @@ def update_routes():
     )
 
     flights_df[['distance_mi', 'geometry']] = flights_df.apply(lambda f:
-        great_circle_route(
-            airports.loc[f.origin_airport_fid, 'geometry'],
-            airports.loc[f.destination_airport_fid, 'geometry'],
-        ),
+        _great_circle_airport_lookup(f, airports),
         axis = 1,
     )
-    flights_df['distance_mi'] = flights_df['distance_mi'].astype(int)
+    flights_df['distance_mi'] = flights_df['distance_mi'].astype("Int64")
 
     routes_gdf = gpd.GeoDataFrame(
         flights_df,
@@ -586,6 +583,16 @@ def _format_time(time_val):
     if time_val is None:
         return None
     return time_val.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def _great_circle_airport_lookup(row, airports):
+    """Runs great_circle_route with a GeoDataFrame row."""
+    try:
+        return great_circle_route(
+            airports.loc[row.origin_airport_fid, 'geometry'],
+            airports.loc[row.destination_airport_fid, 'geometry'],
+        )
+    except KeyError:
+        return pd.Series([None, None])
 
 def _dt_str_tz(dt, tz):
     """Converts a datetime into local time."""

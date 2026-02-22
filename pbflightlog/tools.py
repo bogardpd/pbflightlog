@@ -82,25 +82,38 @@ def add_flight_number(airline_code: str, flight_number: str) -> None:
 def add_flight_pkpasses() -> None:
     """Imports digital boarding passes."""
 
-    import_folder = os.getenv("FLIGHT_LOG_IMPORT_PATH")
-    if import_folder is None:
+    import_folder_env = os.getenv("FLIGHT_LOG_IMPORT_PATH")
+    if import_folder_env is None:
         raise KeyError(
             "Environment variable FLIGHT_LOG_IMPORT_PATH is missing."
         )
-    import_path = Path(import_folder)
-    if not import_path.is_dir():
+    import_folder = Path(import_folder_env)
+    if not import_folder.is_dir():
         raise KeyError(
             "Environment variable FLIGHT_LOG_IMPORT_PATH is not a directory."
         )
-    print(f"Importing digital boarding passes from {import_path}")
-    pkpasses = [
-        PKPass(f) for f in import_path.glob("*.pkpass")
+    archive_folder_env = os.getenv("FLIGHT_LOG_PKPASS_ARCHIVE_PATH")
+    if archive_folder_env is None:
+        raise KeyError(
+            "Environment variable FLIGHT_LOG_PKPASS_ARCHIVE_PATH is missing."
+        )
+    archive_folder = Path(archive_folder_env)
+    if not archive_folder.is_dir():
+        raise KeyError(
+            "Environment variable FLIGHT_LOG_PKPASS_ARCHIVE_PATH is not a directory."
+        )
+
+    print(f"Importing digital boarding passes from \"{import_folder}\"")
+    pkpasses = {
+        f: PKPass(f) for f in import_folder.glob("*.pkpass")
         if f.is_file()
-    ]
-    for pkpass in pkpasses:
+    }
+    for pkpass_file, pkpass in pkpasses.items():
         bp = pkpass.boarding_pass
         _add_bp_flights(bp)
-        print(pkpass.archive_filename)
+        archive_file_path = archive_folder / pkpass.archive_filename
+        pkpass_file.move(archive_file_path)
+        print(f"Archived PKPass to \"{archive_file_path}\"")
     update_routes()
 
 def update_routes() -> None:

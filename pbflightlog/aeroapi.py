@@ -2,11 +2,15 @@
 
 # Standard imports
 import os
+import sys
 import time
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 # Third-party imports
 import requests
+from dateutil.parser import isoparse
+from tabulate import tabulate
 
 # Load API key.
 _API_KEY = os.getenv("AEROAPI_API_KEY")
@@ -82,3 +86,65 @@ def get_flights_ident_track(ident):
     response.raise_for_status()
     fa_json = response.json()
     return fa_json
+
+def select_flight_info(flight_info_flights: list(dict)) -> dict | None:
+    """
+    Asks user to select flight info from a list of flight info.
+    """
+    if len(flight_info_flights) == 0:
+        return None
+    if len(flight_info_flights) == 1:
+        return flight_info_flights[0]
+    flight_info_flights = sorted(flight_info_flights, key=lambda f: (
+        f.get('scheduled_out') is None, f.get('scheduled_out')
+    ), reverse=True)
+    table = [
+        [
+            i + 1,
+            f.get('ident'),
+            _dt_str_tz((
+                f.get('actual_out')
+                or f.get('estimated_out')
+                or f.get('scheduled_out')
+            ), f.get('origin', {}).get('timezone')),
+            (
+                f.get('origin', {}).get('code_iata')
+                or f.get('origin', {}).get('code')
+            ),
+            (
+                f.get('destination', {}).get('code_iata')
+                or f.get('destination', {}).get('code')
+            ),
+            f.get('progress_percent'),
+        ]
+        for i, f in enumerate(flight_info_flights)
+    ]
+    print(tabulate(table,
+        headers=["Row", "Ident", "Departure", "Orig", "Dest", "Progress %"],
+
+    ))
+    selected_flight_info = None
+    while selected_flight_info is None:
+        row = input("Select a row number (or Q to quit): ")
+        if row.upper() == "Q":
+            sys.exit(0)
+        try:
+            row_index = int(row) - 1
+            if row_index < 0:
+                print("Invalid row selection.")
+                continue
+            selected_flight_info = flight_info_flights[row_index]
+        except IndexError, ValueError:
+            print("Invalid row selection.")
+    return selected_flight_info
+
+def _dt_str_tz(dt_str, tz):
+    """Converts a datetime into local time."""
+    if dt_str is None or tz is None:
+        return None
+    try:
+        dt = isoparse(dt_str)
+        dt_tz = dt.astimezone(ZoneInfo(tz))
+    except ValueError:
+        return None
+    return dt_tz.strftime("%a %d %b %Y %H:%M %Z")

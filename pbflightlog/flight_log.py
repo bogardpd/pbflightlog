@@ -345,48 +345,6 @@ class Flight(Record):
         flight.fa_flight_id = fa_json.get('fa_flight_id')
         return flight
 
-    @classmethod
-    def select_flight(cls, flights: list(Self)) -> Self:
-        """Asks user to choose a Flight from a list of Flights."""
-        if len(flights) == 0:
-            return None
-        if len(flights) == 1:
-            return flights[0]
-        flights = sorted(flights, key=lambda f: (
-            f.scheduled_out is None, f.scheduled_out
-        ), reverse=True)
-        table = [
-            [
-                i + 1,
-                f.ident,
-                _dt_str_tz((
-                    f.actual_out or f.estimated_out or f.scheduled_out
-                ), f.origin_tz),
-                f.origin_code,
-                f.destination_code,
-                f.progress,
-            ]
-            for i, f in enumerate(flights)
-        ]
-        print(tabulate(table,
-            headers=["Row", "Ident", "Departure", "Orig", "Dest", "Progress %"],
-
-        ))
-        selected_flight = None
-        while selected_flight is None:
-            row = input("Select a row number (or Q to quit): ")
-            if row.upper() == "Q":
-                sys.exit(0)
-            try:
-                row_index = int(row) - 1
-                if row_index < 0:
-                    print("Invalid row selection.")
-                    continue
-                selected_flight = flights[row_index]
-            except IndexError, ValueError:
-                print("Invalid row selection.")
-        return selected_flight
-
     @staticmethod
     def parse_dt(dt_str) -> datetime | None:
         """Parses a datetime string."""

@@ -162,8 +162,8 @@ def _flight_from_aeroapi_results(aero_results) -> fl.Flight:
     if len(aero_results) == 0:
         print("No matching flights found.")
         sys.exit(1)
-    fa_flights = [fl.Flight.from_aeroapi(f) for f in aero_results]
-    flight = fl.Flight.select_flight(fa_flights)
+    aero_flight_info = aero.select_flight_info(aero_results)
+    flight = fl.Flight.from_aeroapi(aero_flight_info)
     flight.exit_if_not_complete()
     flight.fetch_aeroapi_track_geometry()
     return flight

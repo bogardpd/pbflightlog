@@ -7,6 +7,8 @@ These scripts use a [GeoPackage file](https://www.geopackage.org/) containing fl
 > [!NOTE]
 > Columns use the data types specified in the GeoPackage Encoding Standards [Table 1. GeoPackage Data Types](https://www.geopackage.org/spec/#table_column_data_types), and geometry types specified in [Annex G: Geometry Types (Normative)](https://www.geopackage.org/spec/#geometry_types). Optional fields must be null when unused.
 
+![Entity relationship diagram visualizing the below tables](images/erd.png)
+
 ### aircraft_types (No Geometry)
 
 The `aircraft_types` table contains records of aircraft types that `flights` have used.

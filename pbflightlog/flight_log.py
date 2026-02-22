@@ -5,7 +5,7 @@ import json
 import os
 import sqlite3
 import sys
-from datetime import datetime
+from datetime import datetime, date
 from math import ceil
 from typing import Self
 from zoneinfo import ZoneInfo
@@ -350,6 +350,53 @@ class Flight(Record):
         if dt_str is None:
             return None
         return isoparse(dt_str)
+
+class Trip(Record):
+    """Represents a trip record."""
+    LAYER = "trips"
+    FIND_BY_CODES = []
+    DTYPES = {'fh_id': "Int64"}
+
+    def __init__(self):
+        # Fields used in flight log database:
+        self.fid: int | None = None
+        self.fh_id: int | None = None
+        self.name: str | None = None
+        self.start_date: date | None = None
+        self.end_date: date | None = None
+        self.comments: str | None = None
+
+    @classmethod
+    def select_by_date(cls, departure_date: date) -> Self | None:
+        """
+        Selects a trip based on departure date.
+
+        The date provided should be the flight departure date from a
+        boarding pass.
+        """
+        records = gpd.read_file(
+            flight_log,
+            layer=cls.LAYER,
+            engine="pyogrio",
+            fid_as_index=True,
+        ).dropna(subset=['start_date', 'end_date']).astype(cls.DTYPES)
+
+        matching = records[
+            (records['start_date'].dt.date <= departure_date)
+            & (records['end_date'].dt.date >= departure_date)
+        ].sort_values(by=['start_date', 'end_date'], ascending=False)
+        if matching.size == 0:
+            return None
+        record_dict = matching.iloc[0].to_dict()
+        record_dict['fid'] = int(matching.index[0])
+        record = cls()
+        for k, v in record_dict.items():
+            setattr(
+                record,
+                k,
+                v.date() if hasattr(v, 'date') else v
+            )
+        return record
 
 
 def update_routes():

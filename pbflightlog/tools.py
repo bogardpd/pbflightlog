@@ -140,6 +140,9 @@ def _add_bp_flights(bp: BoardingPass) -> None:
         flight = _flight_from_aeroapi_results(aero_results)
         flight.airline_fid = airline.fid
         flight.boarding_pass_data = leg.bcbp_str
+        trip = fl.Trip.select_by_date(leg.flight_date)
+        if trip is not None:
+            flight.trip_fid = trip.fid
         bp_flights.append(flight)
 
     # Save flights.

@@ -143,6 +143,7 @@ class Flight(Record):
         self.geometry: MultiLineString | None = None
         self.departure_utc: datetime | None = None
         self.arrival_utc: datetime | None = None
+        self.trip_fid: int | None = None
         self.airline_fid: int | None = None
         self.flight_number: str | None = None
         self.origin_airport_fid: int | None = None
@@ -217,6 +218,7 @@ class Flight(Record):
             'geometry': self.geometry,
             'departure_utc': _format_time(self.departure_utc),
             'arrival_utc': _format_time(self.arrival_utc),
+            'trip_fid': self.trip_fid,
             'airline_fid': self.airline_fid,
             'flight_number': self.flight_number,
             'origin_airport_fid': self.origin_airport_fid,

@@ -1,4 +1,4 @@
-# PB Flight Log
+# PBFlightLog
 
 > [!IMPORTANT]
 > This module is still pre-release and may be incomplete.

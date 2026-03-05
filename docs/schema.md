@@ -1,4 +1,4 @@
-# Flight Log Data Schema
+# PBFlightLog Data Schema
 
 These scripts use a [GeoPackage file](https://www.geopackage.org/) containing flight log data for a single traveler.
 
@@ -89,14 +89,14 @@ Individual flights may or may not have geometry (e.g., older flights without kno
 | `purpose` | TEXT | `Business`, `Personal`, or `Mixed` |
 | `trip_fid` | INT (64 bit) | *Optional.* Foreign key referencing the trip on the [`trips`](#trips-no-geometry) table. |
 | `trip_section` | INT (64 bit) | *Optional.* Flights which follow each other after a layover should be assigned the same trip section of the same trip. Used to avoid [double-counting visits to airports during layovers](https://paulbogard.net/posts/counting-visits-to-airports-the-significance-of-trip-sections/). |
-| `airline_fid` | INT (64 bit) | Foreign key referencing the marketing airline on the [`airlines`](#airlines-no-geometry) table. (See [Airline Types](#airline-types).) |
+| `airline_fid` | INT (64 bit) | *Optional.* Foreign key referencing the marketing airline on the [`airlines`](#airlines-no-geometry) table. (See [Airline Types](#airline-types).) |
 | `flight_number` | TEXT | The marketing airline's flight number for the flight. (See [Airline Types](#airline-types).) |
 | `origin_airport_fid` | INT (64 bit) | Foreign key referencing the origin airport on the [`airports`](#airports-point) table. |
 | `destination_airport_fid` | INT (64 bit) | Foreign key referencing the destination airport on the [`airports`](#airports-point) table. |
-| `aircraft_type_fid` | INT (64 bit) | Foreign key referencing the aircraft type on the [`aircraft_types`](#aircraft_types-no-geometry) table. |
+| `aircraft_type_fid` | INT (64 bit) | *Optional.* Foreign key referencing the aircraft type on the [`aircraft_types`](#aircraft_types-no-geometry) table. |
 | `tail_number` | TEXT | *Optional.* The tail number of the aircraft operating the flight (e.g. `N909EV`). |
 | `class_fid` | INT (64 bit) | *Optional.* Foreign key referencing the travel class on the [`classes`](#classes-no-geometry) table. |
-| `operator_fid` | INT (64 bit) | Foreign key referencing the marketing airline on the [`airlines`](#airlines-no-geometry) table. May or may not be the same as the `airline_fid`. (See [Airline Types](#airline-types).) |
+| `operator_fid` | INT (64 bit) | *Optional.* Foreign key referencing the marketing airline on the [`airlines`](#airlines-no-geometry) table. May or may not be the same as the `airline_fid`. (See [Airline Types](#airline-types).) |
 | `codeshare_airline_fid` | INT (64 bit) | *Optional.* Foreign key referencing the codeshare airline on the [`airlines`](#airlines-no-geometry) table. (See [Airline Types](#airline-types).) |
 | `codeshare_flight_number` | TEXT | *Optional.* The codeshare airline's flight number for the flight. (See [Airline Types](#airline-types).) |
 | `distance_mi` | INT (64 bit) | *Optional.* Distance of the flight in miles. Includes taxiing (ground) distance when available.

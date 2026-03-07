@@ -4,6 +4,7 @@
 import argparse
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Third-party imports
@@ -192,7 +193,22 @@ def add_flight_pkpasses() -> None:
         f: PKPass(f) for f in import_folder.glob("*.pkpass")
         if f.is_file()
     }
+    if len(pkpasses) == 0:
+        print("⚠️ No .pkpass files found.")
+
+    # Sort passes by relevant_date.
+    pkpasses = dict(
+        sorted(
+            pkpasses.items(),
+            key=lambda item: item[1].relevant_date or datetime.max.replace(
+                tzinfo=timezone.utc
+            )
+        )
+    )
+
+    # Process passes.
     for pkpass_file, pkpass in pkpasses.items():
+        print(pkpass.relevant_date)
         bp = pkpass.boarding_pass
         _add_bp_flights(bp)
         archive_file_path = archive_folder / pkpass.archive_filename

@@ -13,7 +13,7 @@ cd path/to/module
 python -m pip install .
 ```
 
-If you want to install this module locally and access it from any folder, while still allowing the scripts to be edited after install, perform a pip editable installation:
+If you want to allow the scripts to be editable after install, perform a pip editable installation instead:
 
 ```bash
 cd path/to/module

@@ -1,13 +1,17 @@
 # PBFlightLog
 
-> [!IMPORTANT]
-> This module is still pre-release and may be incomplete.
-
-A small collection of command-line tools for working with a personal flight log stored in a GeoPackage.
+PBFlightLog is a Python command-line interface (CLI) tool for managing a personal flight log stored in a GeoPackage file.
 
 ## Setup
 
-### Editable Installation
+### Installation
+
+Navigate to the module's folder and install it with pip:
+
+```bash
+cd path/to/module
+python -m pip install .
+```
 
 If you want to install this module locally and access it from any folder, while still allowing the scripts to be edited after install, perform a pip editable installation:
 
@@ -15,6 +19,8 @@ If you want to install this module locally and access it from any folder, while 
 cd path/to/module
 python -m pip install -e .
 ```
+
+After installation, the `pbflightlog` command is available on the command line.
 
 ### Environment Variables
 
@@ -39,23 +45,20 @@ The [`add flight --recent`](#add-flight) script also requires a [Flight Historia
 
 ## Basic usage
 
-> [!NOTE]
-> Throughout this documentation, `python` refers to the Python 3 interpreter. Different operating systems may require different commands such as `py` or `python3`.
-
 ```bash
-python -m pbflightlog <command> [options]
+pbflightlog <command> [options]
 ```
 
 To see available commands:
 
 ```bash
-python -m pbflightlog --help
+pbflightlog --help
 ```
 
 To see help for a specific command:
 
 ```bash
-python -m pbflightlog <command> --help
+pbflightlog <command> --help
 ```
 
 ## Commands
@@ -75,7 +78,7 @@ Create a new flight (or new flights) in the flight log.
 
     **Example:**
     ```bash
-    python -m pbflightlog add flight --bcbp "M1DOE/JOHN            EABC123 BOSJFKB6 0717 345P014C0010 147>3180 M6344BB6              29279          0 B6 B6 1234567890          ^108abcdefgh"
+    pbflightlog add flight --bcbp "M1DOE/JOHN            EABC123 BOSJFKB6 0717 345P014C0010 147>3180 M6344BB6              29279          0 B6 B6 1234567890          ^108abcdefgh"
     ```
 
     Since BCBP data contains spaces, be sure to place the BCBP string in quotes. Do not trim trailing spaces from the string, as spaces have meaning in the BCBP format.
@@ -84,7 +87,7 @@ Create a new flight (or new flights) in the flight log.
 
     **Example:**
     ```bash
-    python -m pbflightlog add flight --fa-flight-id UAL1234-1234567890-airline-0123
+    pbflightlog add flight --fa-flight-id UAL1234-1234567890-airline-0123
     ```
 
 - `--number <airline_code> <flight_number>`: Look up an airline and flight number on [AeroAPI](https://www.flightaware.com/commercial/aeroapi/) and add it to the flight log.
@@ -93,7 +96,7 @@ Create a new flight (or new flights) in the flight log.
 
   **Example:**
     ```bash
-    python -m pbflightlog add flight --number AAL 1234
+    pbflightlog add flight --number AAL 1234
     ```
 
 - `--pkpasses`: Fetch all PKPass (Apple Wallet) files from the [import folder](#environment-variables) and add them to the flight log.

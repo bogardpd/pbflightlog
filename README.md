@@ -103,7 +103,7 @@ Create a new flight (or new flights) in the flight log.
 
     **Example:**
     ```bash
-    python -m pbflightlog add flight --pkpasses
+    pbflightlog add flight --pkpasses
     ```
 
 - `--recent`: Add recent flights from [Flight Historian](https://www.flighthistorian.com).
@@ -112,17 +112,17 @@ Create a new flight (or new flights) in the flight log.
 
     **Example:**
     ```bash
-    python -m pbflightlog add flight --recent
+    pbflightlog add flight --recent
     ```
 
-### `update-routes`
+### `refresh routes`
 
-Updates the routes table based on all routes present in the flights table. Generates great circle geometry for these routes.
+Regenerates the routes table based on all origin and destination airport pairs present in the flights table. Generates great circle geometry for these routes.
 
 > [!WARNING]
-> This will overwrite the routes table, including removing routes that no longer have flights. Do not manually edit the routes table, as any edits will be lost when routes are updated.
+> This will overwrite the routes table, including removing routes that no longer have flights. Do not manually edit the routes table, as any edits will be lost when routes are refreshed.
 
 **Example:**
 ```bash
-python -m pbflightlog update-routes
+pbflightlog refresh routes
 ```

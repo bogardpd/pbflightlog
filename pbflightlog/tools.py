@@ -64,9 +64,19 @@ def main():
         help="Add recent flights from Flight Historian"
     )
 
-    # update-routes
-    subparsers.add_parser(
-        "update-routes",
+    # refresh
+    refresh_parser = subparsers.add_parser(
+        "refresh",
+        help="Refresh flight log data",
+    )
+    refresh_parser_subparsers = refresh_parser.add_subparsers(
+        dest="entity",
+        required=True,
+    )
+
+    # refresh routes
+    refresh_parser_subparsers.add_parser(
+        "routes",
         help="Manually refresh routes layer",
     )
 
@@ -84,20 +94,21 @@ def main():
                 add_flight_pkpasses()
             elif args.recent:
                 add_flight_fh_recent()
-    elif args.command == "update-routes":
-        update_routes()
+    elif args.command == "refresh":
+        if args.entity == "routes":
+            refresh_routes()
 
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
     bp = BoardingPass(bcbp_str)
     _add_bp_flights(bp)
-    update_routes()
+    refresh_routes()
 
 def add_flight_fa_flight_id(fa_flight_id: str) -> None:
     """Gets info for a fa_flight_id and saves flight to log."""
     fa_flights = aero.get_flights_ident(fa_flight_id, "fa_flight_id")
     _add_fa_flight_results(fa_flights)
-    update_routes()
+    refresh_routes()
 
 def add_flight_fh_recent() -> None:
     """Finds recent flights on Flight Historian API and imports them."""
@@ -137,7 +148,7 @@ def add_flight_fh_recent() -> None:
         _add_fa_flight_results(fa_flights, {'fh_id': flight.get('fh_id')})
         update_flag = True
     if update_flag:
-        update_routes()
+        refresh_routes()
 
 def add_flight_number(airline_code: str, flight_number: str) -> None:
     """Gets info for a flight number and logs the flight."""
@@ -150,7 +161,7 @@ def add_flight_number(airline_code: str, flight_number: str) -> None:
     ident = f"{airline_code}{flight_number}"
     fa_flights = aero.get_flights_ident(ident, "designator")
     _add_fa_flight_results(fa_flights, {'airline_fid': airline.fid})
-    update_routes()
+    refresh_routes()
 
 def add_flight_pkpasses() -> None:
     """Imports digital boarding passes."""
@@ -187,11 +198,11 @@ def add_flight_pkpasses() -> None:
         archive_file_path = archive_folder / pkpass.archive_filename
         pkpass_file.move(archive_file_path)
         print(f"Archived PKPass to \"{archive_file_path}\"")
-    update_routes()
+    refresh_routes()
 
-def update_routes() -> None:
+def refresh_routes() -> None:
     """Refreshes the routes table."""
-    fl.update_routes()
+    fl.refresh_routes()
 
 def _add_bp_flights(bp: BoardingPass) -> None:
     """Builds Flights from a BoardingPass, and saves them."""

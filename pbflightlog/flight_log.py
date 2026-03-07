@@ -401,7 +401,7 @@ class Trip(Record):
         return record
 
 
-def update_routes():
+def refresh_routes():
     """Updates the routes layer based on logged flights."""
     con = sqlite3.connect(flight_log)
     flights_sql = """

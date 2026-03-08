@@ -113,7 +113,7 @@ Individual flights may or may not have geometry (e.g., older flights without kno
 The `routes` table contains great circle geometry for routes between pairs of airports.
 
 > [!WARNING]
-> The routes table is automatically generated and updated. (An update can be forced with the [`update-routes`](../README.md#update-routes) command.) Do not manually edit the routes table, as any edits will be lost when routes are updated.
+> The routes table is automatically generated and updated. (An update can be forced with the [`refresh routes`](../README.md#refresh-routes) command.) Do not manually edit the routes table, as any edits will be lost when routes are updated.
 
 | Column | Data Type | Description |
 |--------|-----------|-------------|

@@ -7,10 +7,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Third-party imports
-import requests
-import pandas as pd
-
 # Project imports
 import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
@@ -60,10 +56,6 @@ def main():
         action="store_true",
         help="Add flights from .pkpass files in the import folder"
     )
-    add_flight_source_group.add_argument("--recent",
-        action="store_true",
-        help="Add recent flights from Flight Historian"
-    )
 
     # refresh
     refresh_parser = subparsers.add_parser(
@@ -93,8 +85,6 @@ def main():
                 add_flight_number(*args.flight_number)
             elif args.pkpasses:
                 add_flight_pkpasses()
-            elif args.recent:
-                add_flight_fh_recent()
     elif args.command == "refresh":
         if args.entity == "routes":
             refresh_routes()
@@ -110,46 +100,6 @@ def add_flight_fa_flight_id(fa_flight_id: str) -> None:
     fa_flights = aero.get_flights_ident(fa_flight_id, "fa_flight_id")
     _add_fa_flight_results(fa_flights)
     refresh_routes()
-
-def add_flight_fh_recent() -> None:
-    """Finds recent flights on Flight Historian API and imports them."""
-    api_key_fh = os.getenv("FLIGHT_HISTORIAN_API_KEY")
-    if api_key_fh is None:
-        raise KeyError(
-            "Environment variable FLIGHT_HISTORIAN_API_KEY is missing."
-        )
-
-    # Get recent flights.
-    headers = {"api-key": api_key_fh}
-    url = "https://www.flighthistorian.com/api/recent_flights"
-    response = requests.get(url, headers=headers, timeout=10)
-    print(f"🌐 GET {response.url}")
-    response.raise_for_status()
-    fh_recent_flights = response.json()
-    if len(fh_recent_flights) == 0:
-        print("ℹ️ Flight Historian provided zero recent flights.")
-        sys.exit(0)
-    print(f"{len(fh_recent_flights)} recent flight(s) found.")
-
-    # Get list of Flight Historian IDs already in log.
-    current_fh_ids = [
-        f for f in fl.Flight.pluck('fh_id') if not pd.isna(f)
-    ]
-
-    # Look up recent flights on AeroAPI.
-    update_flag = False # Track if we need to update routes
-    for flight in fh_recent_flights:
-        print(f"Importing {flight}")
-        if flight['fh_id'] in current_fh_ids:
-            print("This flight is already in the log.")
-            continue
-        fa_flights = aero.get_flights_ident(
-            flight.get('fa_flight_id'), "fa_flight_id"
-        )
-        _add_fa_flight_results(fa_flights, {'fh_id': flight.get('fh_id')})
-        update_flag = True
-    if update_flag:
-        refresh_routes()
 
 def add_flight_number(airline_code: str, flight_number: str) -> None:
     """Gets info for a flight number and logs the flight."""

@@ -39,10 +39,6 @@ Many of these scripts interact with [AeroAPI](https://www.flightaware.com/commer
 > [!IMPORTANT]
 > When these scripts call AeroAPI with your API key, you will incur AeroAPI per-query fees as appropriate for your AeroAPI account.
 
-The [`add flight --recent`](#add-flight) script also requires a [Flight Historian](https://www.flighthistorian.com) API key to be set as an environment variable:
-
-`FLIGHT_HISTORIAN_API_KEY=yourkey`
-
 ## Basic usage
 
 ```bash
@@ -104,15 +100,6 @@ Create a new flight (or new flights) in the flight log.
     **Example:**
     ```bash
     pbflightlog add flight --pkpasses
-    ```
-
-- `--recent`: Add recent flights from [Flight Historian](https://www.flighthistorian.com).
-
-    This looks up all flights from Flight Historian within the last 10 days, and adds them if they have not already been added.
-
-    **Example:**
-    ```bash
-    pbflightlog add flight --recent
     ```
 
 ### `refresh routes`

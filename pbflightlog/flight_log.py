@@ -154,7 +154,7 @@ class Flight(Record):
         self.boarding_pass_data: str | None = None
         self.fh_id: int | None = None
         self.fa_flight_id: str | None = None
-        self.fa_json: dict | None = None
+        self.fa_json: list(dict) | None = None
         self.geom_source: str | None = None
         self.distance_mi: int | None = None
 
@@ -308,7 +308,10 @@ class Flight(Record):
             flight.progress = int(fa_json.get('progress_percent'))
         except TypeError, ValueError:
             pass
-        flight.fa_json = fa_json
+        # Store fa_json as list containing dict because some flight
+        # records (such as diverts) may require more than one AeroAPI
+        # JSON result stored in the database.
+        flight.fa_json = [fa_json]
         flight.ident = fa_json.get('ident')
         flight.scheduled_out = cls.parse_dt(fa_json.get('scheduled_out'))
         flight.estimated_out = cls.parse_dt(fa_json.get('estimated_out'))

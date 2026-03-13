@@ -430,11 +430,7 @@ def refresh_routes():
     )
     flights_df['distance_mi'] = flights_df['distance_mi'].astype("Int64")
 
-    routes_gdf = gpd.GeoDataFrame(
-        flights_df,
-        geometry='geometry',
-        crs="EPSG:4326", # WGS-84
-    )
+    routes_gdf = gpd.GeoDataFrame(flights_df, geometry='geometry', crs=CRS)
 
     routes_gdf.to_file(
         flight_log,

@@ -7,6 +7,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Third-party imports
+import pandas as pd
+
 # Project imports
 import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
@@ -205,7 +208,44 @@ def report_airports(
 ) -> None:
     """Creates report of airports by number of visits."""
     flights_gdf = fl.Flight.all()
-    print(flights_gdf)
+    if year is not None:
+        flights_gdf = flights_gdf[flights_gdf['departure_utc'].dt.year == year]
+    if len(flights_gdf) == 0:
+        print("No airport visits found.")
+        if year is not None:
+            print(
+                "Try searching a different year or removing the year filter."
+            )
+        sys.exit(1)
+    flights_gdf = flights_gdf[[
+        'departure_utc',
+        'trip_fid',
+        'trip_section',
+        'origin_airport_fid',
+        'destination_airport_fid',
+    ]]
+    flights_gdf = flights_gdf.sort_values(by='departure_utc')
+    flights_gdf['prev_dest_fid'] = flights_gdf['destination_airport_fid'] \
+        .shift(1)
+    flights_gdf['prev_trip_fid'] = flights_gdf['trip_fid'].shift(1)
+    flights_gdf['prev_trip_section'] = flights_gdf['trip_section'].shift(1)
+    # Set origin airport to NA for flights that continue after a
+    # layover. A flight is considered continuing after a layover if it
+    # has a trip and trip section, the trip and trip section are the
+    # same as the previous flight, and the origin is the same as the
+    # previous flight's destination. In that case, the continuing
+    # flight's origin should not be counted (since it was already
+    # counted in the previous flight's destination).
+    flights_gdf.loc[
+        (flights_gdf['trip_fid'].notna())
+        & (flights_gdf['trip_section'].notna())
+        & (flights_gdf['origin_airport_fid'] == flights_gdf['prev_dest_fid'])
+        & (flights_gdf['trip_fid'] == flights_gdf['prev_trip_fid'])
+        & (flights_gdf['trip_section'] == flights_gdf['prev_trip_section']),
+    'origin_airport_fid'] = pd.NA
+    counts = flights_gdf[['origin_airport_fid', 'destination_airport_fid']] \
+        .stack().value_counts()
+    print(counts)
 
 def _add_bp_flights(bp: BoardingPass) -> None:
     """Builds Flights from a BoardingPass, and saves them."""

@@ -142,7 +142,13 @@ class Flight(Record):
     """Represents a flight record."""
     LAYER = "flights"
     FIND_BY_CODES = []
-    DTYPES = {'fh_id': "Int64"}
+    DTYPES = {
+        'origin_airport_fid': "Int64",
+        'destination_airport_fid': "Int64",
+        'fh_id': "Int64",
+        'trip_fid': "Int64",
+        'trip_section': "Int64",
+    }
 
     def __init__(self):
         # Fields used in flight log database:

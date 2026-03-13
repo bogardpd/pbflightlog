@@ -113,3 +113,18 @@ Regenerates the routes table based on all origin and destination airport pairs p
 ```bash
 pbflightlog refresh routes
 ```
+
+### `report airports`
+
+Generates a report of airports visited. ([Layovers count as a single visit.](https://paulbogard.net/posts/counting-visits-to-airports-the-significance-of-trip-sections/))
+
+#### Options
+
+- `--year <year>` (`-y <year>`): Filter the flights that airport visits are calculated from to those whose UTC departure is in the provided year. If this option is not used, airport visits will be calculated on all flights.
+
+- `--output <file>` (`-o <file>`): Save the report to the provided file in CSV format.
+
+**Example:**
+```bash
+pbflightlog report airports --year 2026 --output report.csv
+```

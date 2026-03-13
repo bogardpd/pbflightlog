@@ -204,7 +204,8 @@ def report_airports(
     output_file : Path | None = None,
 ) -> None:
     """Creates report of airports by number of visits."""
-    print(year, output_file)
+    flights_gdf = fl.Flight.all()
+    print(flights_gdf)
 
 def _add_bp_flights(bp: BoardingPass) -> None:
     """Builds Flights from a BoardingPass, and saves them."""

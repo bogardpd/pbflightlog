@@ -39,14 +39,20 @@ class Record():
     DTYPES = {}
 
     @classmethod
-    def pluck(cls, column) -> list(Self):
-        """Returns a list of all values of a column."""
+    def all(cls) -> gpd.GeoDataFrame():
+        """Returns a GeoDataFrame of all records."""
         records = gpd.read_file(
             flight_log,
-            layer = cls.LAYER,
+            layer=cls.LAYER,
             engine="pyogrio",
             fid_as_index=True,
         ).astype(cls.DTYPES)
+        return records
+
+    @classmethod
+    def pluck(cls, column) -> list(Self):
+        """Returns a list of all values of a column."""
+        records = cls.all()
         return records[column].to_list()
 
     @classmethod

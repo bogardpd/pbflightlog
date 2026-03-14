@@ -228,6 +228,7 @@ def report_airports(
         method="min",
     ).astype(int)
     output = output[['rank','name','iata_code','icao_code','faa_lid','visits']]
+    output = output.fillna("")
     print(output.to_string(index=False))
 
 

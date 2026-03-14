@@ -228,9 +228,13 @@ def report_airports(
         method='min',
     ).astype(int)
     output = output[['rank','name','iata_code','icao_code','faa_lid','visits']]
-    output = output.fillna('')
-    print(output.to_string(index=False))
-    print(f"{len(output)} airport(s) visited")
+    if output_file is None:
+        output = output.fillna('')
+        print(output.to_string(index=False))
+        print(f"{len(output)} airport(s) visited")
+    else:
+        output.to_csv(output_file, index=False)
+        print(f"Wrote report to \"{output_file}\"")
 
 
 def _add_bp_flights(bp: BoardingPass) -> None:

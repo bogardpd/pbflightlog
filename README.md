@@ -72,7 +72,7 @@ Create a new flight (or new flights) in the flight log.
 
     You can get this string by scanning the 2-D barcode on a boarding pass with a barcode reader app.
 
-    **Example:**
+    **Example**
     ```bash
     pbflightlog add flight --bcbp "M1DOE/JOHN            EABC123 BOSJFKB6 0717 345P014C0010 147>3180 M6344BB6              29279          0 B6 B6 1234567890          ^108abcdefgh"
     ```
@@ -81,7 +81,7 @@ Create a new flight (or new flights) in the flight log.
 
 - `--fa-flight-id <fa_flight_id>`: Look up a flight on [AeroAPI](https://www.flightaware.com/commercial/aeroapi/) by `fa_flight_id` and add it to the flight log.
 
-    **Example:**
+    **Example**
     ```bash
     pbflightlog add flight --fa-flight-id UAL1234-1234567890-airline-0123
     ```
@@ -90,14 +90,14 @@ Create a new flight (or new flights) in the flight log.
 
   To reduce ambiguity, ICAO airline codes (three letter codes, like `AAL`) are preferred. However, this will attempt to look up IATA airline codes (two character codes, like `AA`).
 
-  **Example:**
+  **Example**
     ```bash
     pbflightlog add flight --number AAL 1234
     ```
 
 - `--pkpasses`: Fetch all PKPass (Apple Wallet) files from the [import folder](#environment-variables) and add them to the flight log.
 
-    **Example:**
+    **Example**
     ```bash
     pbflightlog add flight --pkpasses
     ```
@@ -122,9 +122,32 @@ Generates a report of airports visited. ([Layovers count as a single visit.](htt
 
 - `--year <year>` (`-y <year>`): Filter the flights that airport visits are calculated from to those whose UTC departure is in the provided year. If this option is not used, airport visits will be calculated on all flights.
 
-- `--output <file>` (`-o <file>`): Save the report to the provided file in CSV format.
+- `--output <file>` (`-o <file>`): Save the report in CSV format to the provided filename.
 
-**Example:**
+#### Examples
+
+Show 2015 airport visits:
+
 ```bash
-pbflightlog report airports --year 2026 --output report.csv
+pbflightlog report airports --year 2015
+```
+
+```
+ rank                    name iata_code icao_code faa_lid  visits
+    1                  Dayton       DAY      KDAY     DAY      42
+    2        Chicago (O’Hare)       ORD      KORD     ORD      16
+    3 Orlando (International)       MCO      KMCO     MCO      12
+    4       Dallas/Fort Worth       DFW      KDFW     DFW      10
+    4                   Tulsa       TUL      KTUL     TUL      10
+    6               Baltimore       BWI      KBWI     BWI       5
+    6               Charlotte       CLT      KCLT     CLT       5
+    6            Columbus, OH       CMH      KCMH     CMH       5
+    9          Seattle/Tacoma       SEA      KSEA     SEA       4
+    9               St. Louis       STL      KSTL     STL       4
+10 airport(s) visited
+```
+Save 2015 airport visits to airports.csv:
+
+```bash
+pbflightlog report airports --year 2015 --output airports.csv
 ```

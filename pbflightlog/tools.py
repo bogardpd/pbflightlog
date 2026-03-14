@@ -202,6 +202,7 @@ def refresh_routes() -> None:
     """Refreshes the routes table."""
     fl.refresh_routes()
 
+
 def report_airports(
     year: int | None = None,
     output_file : Path | None = None,
@@ -217,35 +218,18 @@ def report_airports(
                 "Try searching a different year or removing the year filter."
             )
         sys.exit(1)
-    flights_gdf = flights_gdf[[
-        'departure_utc',
-        'trip_fid',
-        'trip_section',
-        'origin_airport_fid',
-        'destination_airport_fid',
-    ]]
-    flights_gdf = flights_gdf.sort_values(by='departure_utc')
-    flights_gdf['prev_dest_fid'] = flights_gdf['destination_airport_fid'] \
-        .shift(1)
-    flights_gdf['prev_trip_fid'] = flights_gdf['trip_fid'].shift(1)
-    flights_gdf['prev_trip_section'] = flights_gdf['trip_section'].shift(1)
-    # Set origin airport to NA for flights that continue after a
-    # layover. A flight is considered continuing after a layover if it
-    # has a trip and trip section, the trip and trip section are the
-    # same as the previous flight, and the origin is the same as the
-    # previous flight's destination. In that case, the continuing
-    # flight's origin should not be counted (since it was already
-    # counted in the previous flight's destination).
-    flights_gdf.loc[
-        (flights_gdf['trip_fid'].notna())
-        & (flights_gdf['trip_section'].notna())
-        & (flights_gdf['origin_airport_fid'] == flights_gdf['prev_dest_fid'])
-        & (flights_gdf['trip_fid'] == flights_gdf['prev_trip_fid'])
-        & (flights_gdf['trip_section'] == flights_gdf['prev_trip_section']),
-    'origin_airport_fid'] = pd.NA
-    counts = flights_gdf[['origin_airport_fid', 'destination_airport_fid']] \
-        .stack().value_counts()
-    print(counts)
+    visits = fl.airport_visits(flights_gdf)
+    airports_gdf = fl.Airport.all()
+    output = airports_gdf.join(visits, how="right")
+    output = output.rename(columns={'count': "visits"})
+    output = output.sort_values(by=['visits', 'name'], ascending=[False, True])
+    output['rank'] = output['visits'].rank(
+        ascending=False,
+        method="min",
+    ).astype(int)
+    output = output[['rank','name','iata_code','icao_code','faa_lid','visits']]
+    print(output.to_string(index=False))
+
 
 def _add_bp_flights(bp: BoardingPass) -> None:
     """Builds Flights from a BoardingPass, and saves them."""

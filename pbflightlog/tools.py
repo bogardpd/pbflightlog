@@ -220,16 +220,17 @@ def report_airports(
         sys.exit(1)
     visits = fl.airport_visits(flights_gdf)
     airports_gdf = fl.Airport.all()
-    output = airports_gdf.join(visits, how="right")
-    output = output.rename(columns={'count': "visits"})
+    output = airports_gdf.join(visits, how='right')
+    output = output.rename(columns={'count': 'visits'})
     output = output.sort_values(by=['visits', 'name'], ascending=[False, True])
     output['rank'] = output['visits'].rank(
         ascending=False,
-        method="min",
+        method='min',
     ).astype(int)
     output = output[['rank','name','iata_code','icao_code','faa_lid','visits']]
-    output = output.fillna("")
+    output = output.fillna('')
     print(output.to_string(index=False))
+    print(f"{len(output)} airport(s) visited")
 
 
 def _add_bp_flights(bp: BoardingPass) -> None:

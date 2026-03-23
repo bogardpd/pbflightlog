@@ -116,7 +116,7 @@ pbflightlog refresh routes
 
 ### `report airports`
 
-Generates a report of airports visited. ([Layovers count as a single visit.](https://paulbogard.net/posts/counting-visits-to-airports-the-significance-of-trip-sections/))
+Generates a report of airports visited. ([Layovers count as a single visit.](https://paulbogard.net/flight-historian/counting-visits-to-airports-the-significance-of-trip-sections/))
 
 #### Options
 

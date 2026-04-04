@@ -7,9 +7,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Third-party imports
-import pandas as pd
-
 # Project imports
 import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
@@ -244,7 +241,7 @@ def _add_bp_flights(bp: BoardingPass) -> None:
         sys.exit(1)
 
     # Build list of boarding pass flights.
-    bp_flights: list(fl.Flight) = []
+    bp_flights: list[fl.Flight] = []
     for leg in bp.legs:
         print(f"Processing leg \"{leg}\"")
         airline = fl.Airline.find_by_code(leg.airline_iata)

@@ -26,10 +26,10 @@ METERS_BETWEEN_GC_POINTS = 100000
 
 CRS = "EPSG:4326" # WGS-84
 
-flight_log = os.getenv("FLIGHT_LOG_GEOPACKAGE_PATH")
+flight_log = os.getenv("PBFLIGHTLOG_GEOPACKAGE_PATH")
 if flight_log is None:
     raise KeyError(
-        "Environment variable FLIGHT_LOG_GEOPACKAGE_PATH is missing."
+        "Environment variable PBFLIGHTLOG_GEOPACKAGE_PATH is missing."
     )
 
 class Record():

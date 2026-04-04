@@ -26,11 +26,11 @@ After installation, the `pbflightlog` command is available on the command line.
 
 This package interacts with a GeoPackage flight log database as described in the [schema](docs/schema.md). The path to this file must be set as an environment variable:
 
-```FLIGHT_LOG_GEOPACKAGE_PATH=/path/to/flight_log.gpkg```
+```PBFLIGHTLOG_GEOPACKAGE_PATH=/path/to/flight_log.gpkg```
 
 This package has the ability to import files from a predefined import folder. The path to this folder must be set as an environment variable:
 
-```FLIGHT_LOG_IMPORT_PATH=/path/to/import/folder```
+```PBFLIGHTLOG_IMPORT_PATH=/path/to/import/folder```
 
 Many of these scripts interact with [AeroAPI](https://www.flightaware.com/commercial/aeroapi/) to get flight data. You will need to get an AeroAPI API key and set it as an environment variable:
 

@@ -6,6 +6,10 @@
 
 - CHANGELOG.
 
+### Changed
+
+- Changed environment variable prefixes from `FLIGHT_LOG_` to `PBFLIGHTLOG_` to match project name.
+
 ## [0.2.0] - 2026-03-14
 
 ### Added

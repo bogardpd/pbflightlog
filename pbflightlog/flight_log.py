@@ -39,7 +39,7 @@ class Record():
     DTYPES = {}
 
     @classmethod
-    def all(cls) -> gpd.GeoDataFrame():
+    def all(cls) -> gpd.GeoDataFrame:
         """Returns a GeoDataFrame of all records."""
         records = gpd.read_file(
             flight_log,
@@ -50,7 +50,7 @@ class Record():
         return records
 
     @classmethod
-    def pluck(cls, column) -> list(Self):
+    def pluck(cls, column) -> list[Self]:
         """Returns a list of all values of a column."""
         records = cls.all()
         return records[column].to_list()
@@ -166,7 +166,7 @@ class Flight(Record):
         self.boarding_pass_data: str | None = None
         self.fh_id: int | None = None
         self.fa_flight_id: str | None = None
-        self.fa_json: list(dict) | None = None
+        self.fa_json: list[dict] | None = None
         self.geom_source: str | None = None
         self.distance_mi: int | None = None
 

@@ -5,7 +5,7 @@ import json
 import os
 import sqlite3
 import sys
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from math import ceil
 from typing import Self
 from zoneinfo import ZoneInfo
@@ -156,6 +156,7 @@ class Flight(Record):
         self.departure_utc: datetime | None = None
         self.arrival_utc: datetime | None = None
         self.trip_fid: int | None = None
+        self.trip_section: int | None = None
         self.airline_fid: int | None = None
         self.flight_number: str | None = None
         self.origin_airport_fid: int | None = None
@@ -231,6 +232,7 @@ class Flight(Record):
             'departure_utc': _format_time(self.departure_utc),
             'arrival_utc': _format_time(self.arrival_utc),
             'trip_fid': self.trip_fid,
+            'trip_section': self.trip_section,
             'airline_fid': self.airline_fid,
             'flight_number': self.flight_number,
             'origin_airport_fid': self.origin_airport_fid,
@@ -286,7 +288,7 @@ class Flight(Record):
                     f"No value was provided for column '{col}'; setting "
                     "its value to null."
                 )
-
+        
         # Reorder columns to match existing schema.
         gdf = record_gdf[existing_cols]
         gdf.to_file(
@@ -382,6 +384,33 @@ class Trip(Record):
         self.start_date: date | None = None
         self.end_date: date | None = None
         self.comments: str | None = None
+
+    def estimate_trip_section(self, departure_dt: datetime) -> int | None:
+        """Suggests a trip section number based on departure time."""
+        flights = gpd.read_file(
+            flight_log,
+            layer=Flight.LAYER,
+            engine="pyogrio",
+            fid_as_index=True,
+        ).astype(Flight.DTYPES)
+        flights = flights[flights['trip_fid'] == self.fid]
+        if len(flights) == 0:
+            # No flights in trip.
+            return 1
+        if flights['trip_fid'].isnull().any():
+            # Some flights have no trip section.
+            return None
+        flights = flights[['departure_utc', 'trip_fid', 'trip_section']]
+        flights = flights.sort_values(by='departure_utc')
+        latest_flight = flights.iloc[-1]
+        if departure_dt <= latest_flight['departure_utc']:
+            # New flight occurs before latest flight.
+            return None
+        if departure_dt < latest_flight['departure_utc'] + timedelta(days=1):
+            # New flight is within 24 hours of latest flight.
+            return int(latest_flight['trip_section'])
+        # New flight is more than 24 hours after latest flight.
+        return int(latest_flight['trip_section']) + 1
 
     @classmethod
     def select_by_date(cls, departure_date: date) -> Self | None:

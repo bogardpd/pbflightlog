@@ -87,7 +87,7 @@ def get_flights_ident_track(ident):
     fa_json = response.json()
     return fa_json
 
-def select_flight_info(flight_info_flights: list(dict)) -> dict | None:
+def select_flight_info(flight_info_flights: list[dict]) -> dict | None:
     """
     Asks user to select flight info from a list of flight info.
     """

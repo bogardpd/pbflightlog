@@ -125,9 +125,11 @@ def select_flight_info(flight_info_flights: list(dict)) -> dict | None:
     ))
     selected_flight_info = None
     while selected_flight_info is None:
-        row = input("Select a row number (or Q to quit): ")
+        row = input("Select a row number (S to skip AeroAPI, Q to quit): ")
         if row.upper() == "Q":
             sys.exit(0)
+        if row.upper() == "S":
+            return None
         try:
             row_index = int(row) - 1
             if row_index < 0:

@@ -5,11 +5,12 @@
 ### Added
 
 - CHANGELOG.
+- Option to skip AeroAPI when selecting AeroAPI flight.
 
 ### Changed
 
 - Update environment variable prefixes from `FLIGHT_LOG_` to `PBFLIGHTLOG_` to match project name.
-- Estimate trip section based on departure times with `add flights` subcommand
+- Estimate trip section based on departure times with `add flights` subcommand.
 
 ## [0.2.0] - 2026-03-14
 

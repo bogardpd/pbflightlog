@@ -288,7 +288,7 @@ class Flight(Record):
                     f"No value was provided for column '{col}'; setting "
                     "its value to null."
                 )
-        
+
         # Reorder columns to match existing schema.
         gdf = record_gdf[existing_cols]
         gdf.to_file(
@@ -397,7 +397,7 @@ class Trip(Record):
         if len(flights) == 0:
             # No flights in trip.
             return 1
-        if flights['trip_fid'].isnull().any():
+        if flights['trip_section'].isnull().any():
             # Some flights have no trip section.
             return None
         flights = flights[['departure_utc', 'trip_fid', 'trip_section']]

@@ -9,6 +9,7 @@
 
 ### Changed
 
+- Rename `report airports` to `index airports`.
 - Update environment variable prefixes from `FLIGHT_LOG_` to `PBFLIGHTLOG_` to match project name.
 - Estimate trip section based on departure times with `add flights` subcommand.
 

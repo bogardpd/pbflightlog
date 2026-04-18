@@ -102,27 +102,15 @@ Create a new flight (or new flights) in the flight log.
     pbflightlog add flight --pkpasses
     ```
 
-### `refresh routes`
+### `index airports`
 
-Regenerates the routes table based on all origin and destination airport pairs present in the flights table. Generates great circle geometry for these routes.
-
-> [!WARNING]
-> This will overwrite the routes table, including removing routes that no longer have flights. Do not manually edit the routes table, as any edits will be lost when routes are refreshed.
-
-**Example:**
-```bash
-pbflightlog refresh routes
-```
-
-### `report airports`
-
-Generates a report of airports visited. ([Layovers count as a single visit.](https://paulbogard.net/flight-historian/counting-visits-to-airports-the-significance-of-trip-sections/))
+Generates an index of airports visited. ([Layovers count as a single visit.](https://paulbogard.net/flight-historian/counting-visits-to-airports-the-significance-of-trip-sections/))
 
 #### Options
 
 - `--year <year>` (`-y <year>`): Filter the flights that airport visits are calculated from to those whose UTC departure is in the provided year. If this option is not used, airport visits will be calculated on all flights.
 
-- `--output <file>` (`-o <file>`): Save the report in CSV format to the provided filename.
+- `--output <file>` (`-o <file>`): Save the index table in CSV format to the provided filename.
 
 #### Examples
 
@@ -150,4 +138,16 @@ Save 2015 airport visits to airports.csv:
 
 ```bash
 pbflightlog report airports --year 2015 --output airports.csv
+```
+
+### `refresh routes`
+
+Regenerates the routes table based on all origin and destination airport pairs present in the flights table. Generates great circle geometry for these routes.
+
+> [!WARNING]
+> This will overwrite the routes table, including removing routes that no longer have flights. Do not manually edit the routes table, as any edits will be lost when routes are refreshed.
+
+**Example:**
+```bash
+pbflightlog refresh routes
 ```

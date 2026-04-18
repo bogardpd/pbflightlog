@@ -73,10 +73,10 @@ def main():
         help="Manually refresh routes layer",
     )
 
-    # report
+    # index
     report_parser = subparsers.add_parser(
-        "report",
-        help="Generate reports",
+        "index",
+        help="Index entities",
     )
 
     report_parser_subparsers = report_parser.add_subparsers(
@@ -85,16 +85,16 @@ def main():
     )
 
     # report airports
-    report_airports_parser = report_parser_subparsers.add_parser(
+    index_airports_parser = report_parser_subparsers.add_parser(
         "airports",
-        help="Report airports by number of visits",
+        help="Display an airport index",
     )
-    report_airports_parser.add_argument("-o", "--output",
-        help="Write report to a file (CSV format)",
+    index_airports_parser.add_argument("-o", "--output",
+        help="Write index to a file (CSV format)",
         metavar="FILE",
         type=Path,
     )
-    report_airports_parser.add_argument("-y", "--year",
+    index_airports_parser.add_argument("-y", "--year",
         help="Filter by departures in a specific year",
         type=int,
     )
@@ -114,9 +114,9 @@ def main():
     elif args.command == "refresh":
         if args.entity == "routes":
             refresh_routes()
-    elif args.command == "report":
+    elif args.command == "index":
         if args.entity == "airports":
-            report_airports(args.year, args.output)
+            index_airports(args.year, args.output)
 
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
@@ -200,7 +200,7 @@ def refresh_routes() -> None:
     fl.refresh_routes()
 
 
-def report_airports(
+def index_airports(
     year: int | None = None,
     output_file : Path | None = None,
 ) -> None:

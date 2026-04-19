@@ -7,6 +7,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Third-party imports
+from tabulate import tabulate
+
 # Project imports
 import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
@@ -246,7 +249,19 @@ def index_airports(
     output = output[['rank','name','iata_code','icao_code','faa_lid','visits']]
     if output_file is None:
         output = output.fillna('')
-        print(output.to_string(index=True))
+        # print(output.to_string(index=True))
+        print(tabulate(
+            output.to_records(),
+            headers=[
+                'fid',
+                'Rank',
+                'Name',
+                'IATA\nCode',
+                'ICAO\nCode',
+                'FAA\nLID',
+                'Visits'
+            ],
+        ))
         print(f"{len(output)} airport(s) visited")
     else:
         output.to_csv(output_file, index=False)

@@ -565,11 +565,11 @@ def flights_table(
             .cumsum()
         table_cols = [
             {'col': 'order', 'label': '#'},
-            {'col': 'departure_date', 'label': 'departure'},
-            {'col': 'flight_ident', 'label': 'flight'},
-            {'col': 'orig', 'label': 'orig'},
-            {'col': 'dest', 'label': 'dest'},
-            {'col': 'cumulative_visits', 'label': 'visits'},
+            {'col': 'departure_date', 'label': 'Departure'},
+            {'col': 'flight_ident', 'label': 'Flight'},
+            {'col': 'orig', 'label': 'Orig'},
+            {'col': 'dest', 'label': 'Dest'},
+            {'col': 'cumulative_visits', 'label': 'Visits'},
         ]
     records = flights_gdf[[c['col'] for c in table_cols]].to_records()
     return tabulate(

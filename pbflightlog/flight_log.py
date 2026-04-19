@@ -8,7 +8,6 @@ import sqlite3
 import sys
 from datetime import datetime, date, timedelta
 from math import ceil
-from tabulate import tabulate
 from typing import Self
 from zoneinfo import ZoneInfo
 
@@ -18,6 +17,7 @@ import pandas as pd
 from dateutil.parser import isoparse
 from pyproj import Geod
 from shapely.geometry import Point, LineString, MultiLineString
+from tabulate import tabulate
 
 # Project imports
 import pbflightlog.aeroapi as aero
@@ -464,6 +464,14 @@ class Trip(Record):
 
 def airport_visits(flights_gdf: gpd.GeoDataFrame) -> pd.Series:
     """Calculates airport visit counts from flights."""
+    count_orig = count_origin_visits(flights_gdf)
+    flights_gdf.loc[~count_orig, 'origin_airport_fid'] = pd.NA
+    counts = flights_gdf[['origin_airport_fid', 'destination_airport_fid']] \
+        .stack().value_counts()
+    return counts
+
+def count_origin_visits(flights_gdf: gpd.GeoDataFrame) -> pd.Series:
+    """Determines whether to count origins as a visit."""
     flights_gdf = flights_gdf[[
         'departure_utc',
         'trip_fid',
@@ -483,16 +491,129 @@ def airport_visits(flights_gdf: gpd.GeoDataFrame) -> pd.Series:
     # previous flight's destination. In that case, the continuing
     # flight's origin should not be counted (since it was already
     # counted in the previous flight's destination).
+    flights_gdf['orig_visit'] = True
     flights_gdf.loc[
         (flights_gdf['trip_fid'].notna())
         & (flights_gdf['trip_section'].notna())
         & (flights_gdf['origin_airport_fid'] == flights_gdf['prev_dest_fid'])
         & (flights_gdf['trip_fid'] == flights_gdf['prev_trip_fid'])
         & (flights_gdf['trip_section'] == flights_gdf['prev_trip_section']),
-    'origin_airport_fid'] = pd.NA
-    counts = flights_gdf[['origin_airport_fid', 'destination_airport_fid']] \
-        .stack().value_counts()
-    return counts
+    'orig_visit'] = False
+    return flights_gdf['orig_visit']
+
+def flights_table(
+    flights_gdf: gpd.GeoDataFrame,
+    visit_airport_fid: int or None = None,
+) -> str:
+    """Formats a flight table for printing."""
+    airports_gdf = Airport.all()
+    airlines_gdf = Airline.all()
+    flights_gdf = flights_gdf.join(
+        airports_gdf.add_suffix("_orig"),
+        on="origin_airport_fid"
+    )
+    flights_gdf = flights_gdf.join(
+        airports_gdf.add_suffix("_dest"),
+        on="destination_airport_fid"
+    )
+    flights_gdf = flights_gdf.join(
+        airlines_gdf.add_suffix("_airline"),
+        on="airline_fid"
+    )
+    flights_gdf['order'] = flights_gdf['departure_utc'].rank().astype(int)
+    flights_gdf['departure_date'] = flights_gdf.apply(lambda r:
+        r['departure_utc'].tz_convert(r['time_zone_orig']).date(),
+        axis=1,
+    )
+    flights_gdf['flight_ident'] = flights_gdf['iata_code_airline'].str.cat(
+        flights_gdf['flight_number'], sep=" "
+    ).fillna("")
+    flights_gdf['orig'] = flights_gdf.apply(lambda r:
+        next(val for col in [
+            'iata_code_orig', 'icao_code_orig', 'faa_lid_orig'
+        ] if pd.notna(val := r[col])),
+        axis=1,
+    )
+    flights_gdf['dest'] = flights_gdf.apply(lambda r:
+        next(val for col in [
+            'iata_code_dest', 'icao_code_dest', 'faa_lid_dest'
+        ] if pd.notna(val := r[col])),
+        axis=1,
+    )
+    if visit_airport_fid is None:
+        # Do not include visit counts.
+        table_cols = [
+            {'col': 'order', 'label': '#'},
+            {'col': 'departure_date', 'label': 'departure'},
+            {'col': 'flight_ident', 'label': 'flight'},
+            {'col': 'orig', 'label': 'orig'},
+            {'col': 'dest', 'label': 'dest'},
+        ]
+    else:
+        # Include visit counts for the specified airport.
+        flights_gdf['count_origin_visits'] = count_origin_visits(flights_gdf)
+        flights_gdf['this_airport_visits'] = flights_gdf.apply(lambda r:
+            (1 if (
+                r['count_origin_visits']
+                and r['origin_airport_fid'] == visit_airport_fid
+            ) else 0) + (1 if (
+                r['destination_airport_fid'] == visit_airport_fid
+            ) else 0),
+            axis=1,
+        )
+        flights_gdf['cumulative_visits'] = flights_gdf['this_airport_visits'] \
+            .cumsum()
+        table_cols = [
+            {'col': 'order', 'label': '#'},
+            {'col': 'departure_date', 'label': 'departure'},
+            {'col': 'flight_ident', 'label': 'flight'},
+            {'col': 'orig', 'label': 'orig'},
+            {'col': 'dest', 'label': 'dest'},
+            {'col': 'cumulative_visits', 'label': 'visits'},
+        ]
+    records = flights_gdf[[c['col'] for c in table_cols]].to_records()
+    return tabulate(
+        records,
+        headers=["fid", *[c['label'] for c in table_cols]],
+    )
+
+def _this_airport_visits(row, fid: int) -> int:
+    """Returns number of visits in row of airport with provided fid."""
+    count = 0
+    if row['count_origin_visits'] and row['origin_airport_fid'] == fid:
+        count += 1
+    if row['destination_airport_fid'] == fid:
+        count += 1
+    return count
+
+
+def great_circle_route(point1, point2) -> pd.Series:
+    """
+    Creates a great circle line between points.
+
+    Returns a Pandas series with distance in integer miles and a
+    MultiLineString geometry.
+    """
+    if point1 == point2:
+        # Returned to same airport. Return zero great circle distance
+        # and no geometry.
+        return pd.Series([0, None])
+    geod = Geod(ellps="WGS84")
+    _, _, dist_m = geod.inv(point1.x, point1.y, point2.x, point2.y)
+    dist_mi = int(round(dist_m / METERS_PER_MILE))
+
+    # Create a great circle LineString.
+    num_points = ceil(dist_m / METERS_BETWEEN_GC_POINTS) + 1
+    midpoints = geod.npts(
+        point1.x, point1.y,
+        point2.x, point2.y,
+        num_points - 2,
+    )
+    geom = split_at_antimeridian(
+        LineString([point1, *midpoints, point2])
+    )
+
+    return pd.Series([dist_mi, geom])
 
 def refresh_routes():
     """Updates the routes layer based on logged flights."""
@@ -532,81 +653,6 @@ def refresh_routes():
     print(
         f"Updated all routes in {flight_log}."
     )
-
-def flights_table(flights_gdf) -> str:
-    """Formats a flight table for printing."""
-    airports_gdf = Airport.all()
-    airlines_gdf = Airline.all()
-    flights_gdf = flights_gdf.join(
-        airports_gdf.add_suffix("_orig"),
-        on="origin_airport_fid"
-    )
-    flights_gdf = flights_gdf.join(
-        airports_gdf.add_suffix("_dest"),
-        on="destination_airport_fid"
-    )
-    flights_gdf = flights_gdf.join(
-        airlines_gdf.add_suffix("_airline"),
-        on="airline_fid"
-    )
-    flights_gdf['order'] = flights_gdf['departure_utc'].rank().astype(int)
-    flights_gdf['departure_date'] = flights_gdf.apply(lambda r:
-        r['departure_utc'].tz_convert(r['time_zone_orig']).date(),
-        axis=1,
-    )
-    flights_gdf['flight_ident'] = flights_gdf['iata_code_airline'].str.cat(
-        flights_gdf['flight_number'], sep=" "
-    ).fillna("")
-    flights_gdf['orig'] = flights_gdf.apply(lambda r:
-        next(val for col in [
-            'iata_code_orig', 'icao_code_orig', 'faa_lid_orig'
-        ] if pd.notna(val := r[col])),
-        axis=1,
-    )
-    flights_gdf['dest'] = flights_gdf.apply(lambda r:
-        next(val for col in [
-            'iata_code_dest', 'icao_code_dest', 'faa_lid_dest'
-        ] if pd.notna(val := r[col])),
-        axis=1,
-    )
-    records = flights_gdf[[
-        'order',
-        'departure_date',
-        'flight_ident',
-        'orig',
-        'dest',
-    ]].to_records()
-    return tabulate(records, headers=[
-        "fid", "#", "departure", "flight", "orig", "dest"
-    ])
-
-def great_circle_route(point1, point2) -> pd.Series:
-    """
-    Creates a great circle line between points.
-
-    Returns a Pandas series with distance in integer miles and a
-    MultiLineString geometry.
-    """
-    if point1 == point2:
-        # Returned to same airport. Return zero great circle distance
-        # and no geometry.
-        return pd.Series([0, None])
-    geod = Geod(ellps="WGS84")
-    _, _, dist_m = geod.inv(point1.x, point1.y, point2.x, point2.y)
-    dist_mi = int(round(dist_m / METERS_PER_MILE))
-
-    # Create a great circle LineString.
-    num_points = ceil(dist_m / METERS_BETWEEN_GC_POINTS) + 1
-    midpoints = geod.npts(
-        point1.x, point1.y,
-        point2.x, point2.y,
-        num_points - 2,
-    )
-    geom = split_at_antimeridian(
-        LineString([point1, *midpoints, point2])
-    )
-
-    return pd.Series([dist_mi, geom])
 
 def split_at_antimeridian(track_ls: LineString) -> MultiLineString:
     """Split a LineString at the antimeridian."""

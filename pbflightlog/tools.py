@@ -219,20 +219,6 @@ def add_flight_pkpasses() -> None:
         print(f"Archived PKPass to \"{archive_file_path}\"")
     refresh_routes()
 
-def show_airport(identifier: str) -> None:
-    """Shows data about a specific airport."""
-    airport = fl.Airport.find_by_code(identifier.upper(), check_fid=True)
-    if airport is None:
-        sys.exit(1)
-    print(airport)
-
-    flights_gdf = fl.Flight.all()
-    flights_gdf = flights_gdf[
-        (flights_gdf['origin_airport_fid'] == airport.fid)
-        | (flights_gdf['destination_airport_fid'] == airport.fid)
-    ]
-    print(fl.flights_table(flights_gdf))
-
 def index_airports(
     year: int | None = None,
     output_file : Path | None = None,
@@ -265,6 +251,20 @@ def index_airports(
     else:
         output.to_csv(output_file, index=False)
         print(f"Wrote report to \"{output_file}\"")
+
+def show_airport(identifier: str) -> None:
+    """Shows data about a specific airport."""
+    airport = fl.Airport.find_by_code(identifier.upper(), check_fid=True)
+    if airport is None:
+        sys.exit(1)
+    print(airport)
+
+    flights_gdf = fl.Flight.all()
+    flights_gdf = flights_gdf[
+        (flights_gdf['origin_airport_fid'] == airport.fid)
+        | (flights_gdf['destination_airport_fid'] == airport.fid)
+    ]
+    print(fl.flights_table(flights_gdf, visit_airport_fid=airport.fid))
 
 def refresh_routes() -> None:
     """Refreshes the routes table."""

@@ -3,6 +3,7 @@
 # Standard imports
 import json
 import os
+import re
 import sqlite3
 import sys
 from datetime import datetime, date, timedelta
@@ -56,7 +57,7 @@ class Record():
         return records[column].to_list()
 
     @classmethod
-    def find_by_code(cls, code: str) -> Self | None:
+    def find_by_code(cls, code: str, check_fid=False) -> Self | None:
         """Finds a record by searching through code fields."""
         if getattr(cls, 'FIND_BY_CODES', None) is None:
             return None
@@ -68,6 +69,17 @@ class Record():
             engine="pyogrio",
             fid_as_index=True,
         )
+
+        # Check for fid on numeric codes. Note that this will allow
+        # defunct records since fids are unique.
+        if check_fid and re.search(r'^[0-9]+$', code):
+            if int(code) in records.index:
+                record_dict = records.loc[int(code)].to_dict()
+                record_dict['fid'] = int(code)
+                record = cls()
+                for key, value in record_dict.items():
+                    setattr(record, key, value)
+                return record
 
         # Filter out defunct records. This is helpful in situations
         # where current records use the same codes as an old record
@@ -123,7 +135,7 @@ class Airline(Record):
 class Airport(Record):
     """Represents an airline record."""
     LAYER = "airports"
-    FIND_BY_CODES = ['icao_code', 'iata_code']
+    FIND_BY_CODES = ['icao_code', 'iata_code', 'faa_lid']
     DTYPES = {}
 
     def __init__(self):
@@ -137,6 +149,10 @@ class Airport(Record):
         self.faa_lid: str | None = None
         self.time_zone: str | None = None
         self.is_defunct: bool | None = None
+
+    def __repr__(self):
+        code = self.iata_code or self.icao_code or self.faa_lid
+        return f"[{self.fid}] {code}: {self.name}"
 
 class Flight(Record):
     """Represents a flight record."""

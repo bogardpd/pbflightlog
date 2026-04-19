@@ -219,9 +219,10 @@ def add_flight_pkpasses() -> None:
         print(f"Archived PKPass to \"{archive_file_path}\"")
     refresh_routes()
 
-def show_airport(id: str) -> None:
+def show_airport(identifier: str) -> None:
     """Shows data about a specific airport."""
-    print(id)
+    airport = fl.Airport.find_by_code(identifier.upper(), check_fid=True)
+    print(airport)
 
 def index_airports(
     year: int | None = None,

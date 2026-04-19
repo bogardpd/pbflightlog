@@ -8,6 +8,7 @@ import sqlite3
 import sys
 from datetime import datetime, date, timedelta
 from math import ceil
+from tabulate import tabulate
 from typing import Self
 from zoneinfo import ZoneInfo
 
@@ -532,6 +533,42 @@ def refresh_routes():
         f"Updated all routes in {flight_log}."
     )
 
+def flights_table(flights_gdf) -> str:
+    """Formats a flight table for printing."""
+    airports_gdf = Airport.all()
+    flights_gdf = flights_gdf.join(
+        airports_gdf.add_suffix("_orig"),
+        on="origin_airport_fid"
+    )
+    flights_gdf = flights_gdf.join(
+        airports_gdf.add_suffix("_dest"),
+        on="destination_airport_fid"
+    )
+    flights_gdf['order'] = flights_gdf['departure_utc'].rank().astype(int)
+    flights_gdf['departure_date'] = flights_gdf.apply(lambda r:
+        r['departure_utc'].tz_convert(r['time_zone_orig']).date(),
+        axis=1,
+    )
+    flights_gdf['orig'] = flights_gdf.apply(lambda r:
+        next(val for col in [
+            'iata_code_orig', 'icao_code_orig', 'faa_lid_orig'
+        ] if pd.notna(val := r[col])),
+        axis=1,
+    )
+    flights_gdf['dest'] = flights_gdf.apply(lambda r:
+        next(val for col in [
+            'iata_code_dest', 'icao_code_dest', 'faa_lid_dest'
+        ] if pd.notna(val := r[col])),
+        axis=1,
+    )
+    records = flights_gdf[[
+        'order',
+        'departure_date',
+        'orig',
+        'dest',
+    ]].to_records()
+    return tabulate(records, headers=["fid", "#", "departure", "orig", "dest"])
+
 def great_circle_route(point1, point2) -> pd.Series:
     """
     Creates a great circle line between points.
@@ -617,6 +654,13 @@ def _crossing_point(p1, p2):
     x_frac = (lon - p1[0]) / (p2[0] - p1[0])
     return tuple([c1 + (x_frac * (c2 - c1)) for c1, c2 in zip(p1, p2)])
 
+def _dt_str_tz(dt, tz):
+    """Converts a datetime into local time."""
+    if dt is None or tz is None:
+        return None
+    dt_tz = dt.astimezone(ZoneInfo(tz))
+    return dt_tz.strftime("%a %d %b %Y %H:%M %Z")
+
 def _format_time(time_val):
     """Format time as ISO 8601 with Z."""
     if time_val is None:
@@ -632,10 +676,3 @@ def _great_circle_airport_lookup(row, airports):
         )
     except KeyError:
         return pd.Series([None, None])
-
-def _dt_str_tz(dt, tz):
-    """Converts a datetime into local time."""
-    if dt is None or tz is None:
-        return None
-    dt_tz = dt.astimezone(ZoneInfo(tz))
-    return dt_tz.strftime("%a %d %b %Y %H:%M %Z")

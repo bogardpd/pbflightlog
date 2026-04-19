@@ -57,6 +57,53 @@ def main():
         help="Add flights from .pkpass files in the import folder"
     )
 
+    # index
+    index_parser = subparsers.add_parser(
+        "index",
+        help="Display indexes",
+    )
+
+    index_parser_subparsers = index_parser.add_subparsers(
+        dest="entity",
+        required=True,
+    )
+
+    # index airports
+    index_airports_parser = index_parser_subparsers.add_parser(
+        "airports",
+        help="Display an airport index",
+    )
+    index_airports_parser.add_argument("-o", "--output",
+        help="Write index to a file (CSV format)",
+        metavar="FILE",
+        type=Path,
+    )
+    index_airports_parser.add_argument("-y", "--year",
+        help="Filter by departures in a specific year",
+        type=int,
+    )
+
+    # show
+    show_parser = subparsers.add_parser(
+        "show",
+        help="Show details for specific entities",
+    )
+
+    show_parser_subparsers = show_parser.add_subparsers(
+        dest="entity",
+        required=True,
+    )
+
+    # show airport
+    show_airport_parser = show_parser_subparsers.add_parser(
+        "airport",
+        help="Show details about an airport",
+    )
+    show_airport_parser.add_argument("id",
+        help="Airport identifier (fid, IATA, ICAO, or FAA LID)",
+        type=str,
+    )
+
     # refresh
     refresh_parser = subparsers.add_parser(
         "refresh",
@@ -73,32 +120,6 @@ def main():
         help="Manually refresh routes layer",
     )
 
-    # index
-    report_parser = subparsers.add_parser(
-        "index",
-        help="Index entities",
-    )
-
-    report_parser_subparsers = report_parser.add_subparsers(
-        dest="entity",
-        required=True,
-    )
-
-    # report airports
-    index_airports_parser = report_parser_subparsers.add_parser(
-        "airports",
-        help="Display an airport index",
-    )
-    index_airports_parser.add_argument("-o", "--output",
-        help="Write index to a file (CSV format)",
-        metavar="FILE",
-        type=Path,
-    )
-    index_airports_parser.add_argument("-y", "--year",
-        help="Filter by departures in a specific year",
-        type=int,
-    )
-
     # Parse arguments
     args = parser.parse_args()
     if args.command == "add":
@@ -111,12 +132,15 @@ def main():
                 add_flight_number(*args.flight_number)
             elif args.pkpasses:
                 add_flight_pkpasses()
-    elif args.command == "refresh":
-        if args.entity == "routes":
-            refresh_routes()
     elif args.command == "index":
         if args.entity == "airports":
             index_airports(args.year, args.output)
+    elif args.command == "show":
+        if args.entity == "airport":
+            show_airport(args.id)
+    elif args.command == "refresh":
+        if args.entity == "routes":
+            refresh_routes()
 
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
@@ -195,16 +219,15 @@ def add_flight_pkpasses() -> None:
         print(f"Archived PKPass to \"{archive_file_path}\"")
     refresh_routes()
 
-def refresh_routes() -> None:
-    """Refreshes the routes table."""
-    fl.refresh_routes()
-
+def show_airport(id: str) -> None:
+    """Shows data about a specific airport."""
+    print(id)
 
 def index_airports(
     year: int | None = None,
     output_file : Path | None = None,
 ) -> None:
-    """Creates report of airports by number of visits."""
+    """Provides an index of all airports."""
     flights_gdf = fl.Flight.all()
     if year is not None:
         flights_gdf = flights_gdf[flights_gdf['departure_utc'].dt.year == year]
@@ -233,6 +256,9 @@ def index_airports(
         output.to_csv(output_file, index=False)
         print(f"Wrote report to \"{output_file}\"")
 
+def refresh_routes() -> None:
+    """Refreshes the routes table."""
+    fl.refresh_routes()
 
 def _add_bp_flights(bp: BoardingPass) -> None:
     """Builds Flights from a BoardingPass, and saves them."""

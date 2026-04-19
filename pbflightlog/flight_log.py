@@ -569,7 +569,7 @@ def flights_table(
             {'col': 'flight_ident', 'label': 'Flight'},
             {'col': 'orig', 'label': 'Orig'},
             {'col': 'dest', 'label': 'Dest'},
-            {'col': 'cumulative_visits', 'label': 'Visits'},
+            {'col': 'cumulative_visits', 'label': 'Cumulative\nVisits'},
         ]
     records = flights_gdf[[c['col'] for c in table_cols]].to_records()
     return tabulate(

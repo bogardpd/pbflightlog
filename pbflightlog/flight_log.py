@@ -536,6 +536,7 @@ def refresh_routes():
 def flights_table(flights_gdf) -> str:
     """Formats a flight table for printing."""
     airports_gdf = Airport.all()
+    airlines_gdf = Airline.all()
     flights_gdf = flights_gdf.join(
         airports_gdf.add_suffix("_orig"),
         on="origin_airport_fid"
@@ -544,11 +545,18 @@ def flights_table(flights_gdf) -> str:
         airports_gdf.add_suffix("_dest"),
         on="destination_airport_fid"
     )
+    flights_gdf = flights_gdf.join(
+        airlines_gdf.add_suffix("_airline"),
+        on="airline_fid"
+    )
     flights_gdf['order'] = flights_gdf['departure_utc'].rank().astype(int)
     flights_gdf['departure_date'] = flights_gdf.apply(lambda r:
         r['departure_utc'].tz_convert(r['time_zone_orig']).date(),
         axis=1,
     )
+    flights_gdf['flight_ident'] = flights_gdf['iata_code_airline'].str.cat(
+        flights_gdf['flight_number'], sep=" "
+    ).fillna("")
     flights_gdf['orig'] = flights_gdf.apply(lambda r:
         next(val for col in [
             'iata_code_orig', 'icao_code_orig', 'faa_lid_orig'
@@ -564,10 +572,13 @@ def flights_table(flights_gdf) -> str:
     records = flights_gdf[[
         'order',
         'departure_date',
+        'flight_ident',
         'orig',
         'dest',
     ]].to_records()
-    return tabulate(records, headers=["fid", "#", "departure", "orig", "dest"])
+    return tabulate(records, headers=[
+        "fid", "#", "departure", "flight", "orig", "dest"
+    ])
 
 def great_circle_route(point1, point2) -> pd.Series:
     """

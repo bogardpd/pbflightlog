@@ -2,8 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.0]
+
 ### Added
 
+- `show airport` subcommand to show a flight table for a particular airport.
 - CHANGELOG.
 - Option to skip AeroAPI when selecting AeroAPI flight.
 

@@ -250,7 +250,7 @@ def index_airports(
     output = output[['rank','name','iata_code','icao_code','faa_lid','visits']]
     if output_file is None:
         output = output.fillna('')
-        print(output.to_string(index=False))
+        print(output.to_string(index=True))
         print(f"{len(output)} airport(s) visited")
     else:
         output.to_csv(output_file, index=False)

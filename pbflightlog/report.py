@@ -1,6 +1,7 @@
 """Functions for creating reports."""
 
 # Standard imports
+from importlib.resources import files
 import tomllib
 
 # Third-party imports
@@ -9,7 +10,7 @@ import pandas as pd
 # Project imports
 import pbflightlog.flight_log as fl
 
-with open("config/config.toml", "rb") as f:
+with open(files("pbflightlog.config").joinpath("config.toml"), "rb") as f:
     CONFIG = tomllib.load(f)
 
 def report_milestones() -> None:

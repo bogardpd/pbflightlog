@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.4.1]
+
+### Fixed
+
+- Made config file path work from any directory.
+
 ## [0.4.0]
 
 ### Added

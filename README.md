@@ -179,7 +179,29 @@ Regenerates the routes table based on all origin and destination airport pairs p
 > [!WARNING]
 > This will overwrite the routes table, including removing routes that no longer have flights. Do not manually edit the routes table, as any edits will be lost when routes are refreshed.
 
-**Example:**
+#### Example
 ```bash
 pbflightlog refresh routes
+```
+### `report milestones`
+
+Shows flights that include cumulative distance milestones.
+
+> [!NOTE]
+> By default, milestones are set at 50 000, 100 000, 200 000, 500 000, 1 000 000, 2 000 000, 5 000 000, 10 000 000, 20 000 000, and 50 000 000 miles. Milestones can be configured in `config/config.toml`.
+
+#### Example
+
+```bash
+pbflightlog report milestones
+```
+
+```
+  fid    #  Departure    Flight    Orig    Dest      Milestone    Cumulative
+                                                                       Miles
+-----  ---  -----------  --------  ------  ------  -----------  ------------
+   40    1  2009-04-03   AA 1042   DFW     DAY           50000         50642
+   80    2  2010-03-04   AA 3597   DFW     CMH          100000        100089
+  160    3  2012-12-03   UA 3485   CMH     IAD          200000        200125
+  320    4  2018-03-02   AA 82     AKL     LAX          500000        502473
 ```

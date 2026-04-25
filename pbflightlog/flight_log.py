@@ -387,6 +387,12 @@ class Flight(Record):
             return None
         return isoparse(dt_str)
 
+class Route(Record):
+    """Represents a route record"""
+    LAYER = "routes"
+    FIND_BY_CODES = []
+    DTYPES = {}
+
 class Trip(Record):
     """Represents a trip record."""
     LAYER = "trips"
@@ -503,7 +509,8 @@ def count_origin_visits(flights_gdf: gpd.GeoDataFrame) -> pd.Series:
 
 def flights_table(
     flights_gdf: gpd.GeoDataFrame,
-    visit_airport_fid: int or None = None,
+    visit_airport_fid: int | None = None,
+    extra_columns: dict | None = None,
 ) -> str:
     """Formats a flight table for printing."""
     airports_gdf = Airport.all()
@@ -540,16 +547,14 @@ def flights_table(
         ] if pd.notna(val := r[col])),
         axis=1,
     )
-    if visit_airport_fid is None:
-        # Do not include visit counts.
-        table_cols = [
-            {'col': 'order', 'label': '#'},
-            {'col': 'departure_date', 'label': 'departure'},
-            {'col': 'flight_ident', 'label': 'flight'},
-            {'col': 'orig', 'label': 'orig'},
-            {'col': 'dest', 'label': 'dest'},
-        ]
-    else:
+    table_cols = {
+        'order': "#",
+        'departure_date': "Departure",
+        'flight_ident': "Flight",
+        'orig': "Orig",
+        'dest': "Dest",
+    }
+    if visit_airport_fid is not None:
         # Include visit counts for the specified airport.
         flights_gdf['count_origin_visits'] = count_origin_visits(flights_gdf)
         flights_gdf['this_airport_visits'] = flights_gdf.apply(lambda r:
@@ -563,18 +568,15 @@ def flights_table(
         )
         flights_gdf['cumulative_visits'] = flights_gdf['this_airport_visits'] \
             .cumsum()
-        table_cols = [
-            {'col': 'order', 'label': '#'},
-            {'col': 'departure_date', 'label': 'Departure'},
-            {'col': 'flight_ident', 'label': 'Flight'},
-            {'col': 'orig', 'label': 'Orig'},
-            {'col': 'dest', 'label': 'Dest'},
-            {'col': 'cumulative_visits', 'label': 'Cumulative\nVisits'},
-        ]
-    records = flights_gdf[[c['col'] for c in table_cols]].to_records()
+        table_cols |= {
+            'cumulative_visits': "Cumulative\nVisits"
+        }
+    if extra_columns is not None:
+        table_cols |= extra_columns
+    records = flights_gdf[table_cols.keys()].to_records()
     return tabulate(
         records,
-        headers=["fid", *[c['label'] for c in table_cols]],
+        headers=["fid", *table_cols.values()],
     )
 
 def _this_airport_visits(row, fid: int) -> int:

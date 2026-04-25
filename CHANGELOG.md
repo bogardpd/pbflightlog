@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.4.0]
+
+### Added
+
+- `report milestones` command to show flights which cross cumulative distance milestones.
+
+### Fixed
+
+- Capitalization of table headers in `show airport` views.
+
 ## [0.3.0]
 
 ### Added

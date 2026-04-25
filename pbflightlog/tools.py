@@ -13,6 +13,7 @@ from tabulate import tabulate
 # Project imports
 import pbflightlog.aeroapi as aero
 import pbflightlog.flight_log as fl
+import pbflightlog.report as report
 from pbflightlog.boarding_pass import BoardingPass, PKPass
 
 def main():
@@ -123,6 +124,22 @@ def main():
         help="Manually refresh routes layer",
     )
 
+    # report
+    report_parser = subparsers.add_parser(
+        "report",
+        help="Generate reports",
+    )
+    report_parser_subparsers = report_parser.add_subparsers(
+        dest="entity",
+        required=True,
+    )
+
+    # report milestones
+    report_parser_subparsers.add_parser(
+        "milestones",
+        help="Generate a report of flying milestones"
+    )
+
     # Parse arguments
     args = parser.parse_args()
     if args.command == "add":
@@ -144,6 +161,9 @@ def main():
     elif args.command == "refresh":
         if args.entity == "routes":
             refresh_routes()
+    elif args.command == "report":
+        if args.entity == "milestones":
+            report.report_milestones()
 
 def add_flight_bcbp(bcbp_str) -> None:
     """Parses a Bar-Coded Boarding Pass string."""

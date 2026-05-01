@@ -269,9 +269,14 @@ class Flight(Record):
         }
         return gpd.GeoDataFrame([record], geometry='geometry', crs=CRS)
 
-    def save(self) -> None:
+    def save(self, geojson: Path | None = None) -> None:
         """Appends a flight to the geopackage file."""
         record_gdf = self.gdf()
+        if geojson is not None:
+            # Save to GeoJSON instead of database.
+            record_gdf.to_file(geojson, driver='GeoJSON')
+            print(f"Wrote flight to {geojson}.")
+            sys.exit(0)
         existing = gpd.read_file(
             flight_log,
             layer=Flight.LAYER,

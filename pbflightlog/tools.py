@@ -34,6 +34,11 @@ def main():
     add_flight_parser = add_subparsers.add_parser(
         "flight",
     )
+    add_flight_parser.add_argument("--geojson",
+        help="Save flight to GeoJSON file instead of database",
+        metavar="GEOJSON_PATH",
+        type=Path,
+    )
     add_flight_source_group = add_flight_parser.add_mutually_exclusive_group(
         required=True, # Set to false if we create GUI add flight option
     )
@@ -145,13 +150,16 @@ def main():
     if args.command == "add":
         if args.entity == "flight":
             if args.bcbp is not None:
-                add_flight_bcbp(args.bcbp)
+                add_flight_bcbp(args.bcbp, geojson=args.geojson)
             elif args.fa_flight_id is not None:
-                add_flight_fa_flight_id(args.fa_flight_id)
+                add_flight_fa_flight_id(
+                    args.fa_flight_id,
+                    geojson=args.geojson,
+                )
             elif args.flight_number is not None:
-                add_flight_number(*args.flight_number)
+                add_flight_number(*args.flight_number, geojson=args.geojson)
             elif args.pkpasses:
-                add_flight_pkpasses()
+                add_flight_pkpasses(geojson=args.geojson)
     elif args.command == "index":
         if args.entity == "airports":
             index_airports(args.year, args.output)
@@ -165,19 +173,26 @@ def main():
         if args.entity == "milestones":
             report.report_milestones()
 
-def add_flight_bcbp(bcbp_str) -> None:
+def add_flight_bcbp(bcbp_str, geojson: Path | None = None) -> None:
     """Parses a Bar-Coded Boarding Pass string."""
     bp = BoardingPass(bcbp_str)
-    _add_bp_flights(bp)
+    _add_bp_flights(bp, geojson=geojson)
     refresh_routes()
 
-def add_flight_fa_flight_id(fa_flight_id: str) -> None:
+def add_flight_fa_flight_id(
+    fa_flight_id: str,
+    geojson: Path | None = None
+) -> None:
     """Gets info for a fa_flight_id and saves flight to log."""
     fa_flights = aero.get_flights_ident(fa_flight_id, "fa_flight_id")
     _add_fa_flight_results(fa_flights)
     refresh_routes()
 
-def add_flight_number(airline_code: str, flight_number: str) -> None:
+def add_flight_number(
+    airline_code: str,
+    flight_number: str,
+    geojson: Path | None = None
+) -> None:
     """Gets info for a flight number and logs the flight."""
     airline = fl.Airline.find_by_code(airline_code)
     # If airline is IATA, try to look up ICAO.
@@ -187,10 +202,14 @@ def add_flight_number(airline_code: str, flight_number: str) -> None:
     flight_number = flight_number.lstrip("0") or "0"
     ident = f"{airline_code}{flight_number}"
     fa_flights = aero.get_flights_ident(ident, "designator")
-    _add_fa_flight_results(fa_flights, {'airline_fid': airline.fid})
+    _add_fa_flight_results(
+        fa_flights,
+        fields={'airline_fid': airline.fid},
+        geojson=geojson,
+    )
     refresh_routes()
 
-def add_flight_pkpasses() -> None:
+def add_flight_pkpasses(geojson: Path | None = None) -> None:
     """Imports digital boarding passes."""
 
     import_folder_env = os.getenv("PBFLIGHTLOG_IMPORT_PATH")
@@ -236,7 +255,7 @@ def add_flight_pkpasses() -> None:
     for pkpass_file, pkpass in pkpasses.items():
         print(pkpass.relevant_date)
         bp = pkpass.boarding_pass
-        _add_bp_flights(bp)
+        _add_bp_flights(bp, geojson=geojson)
         archive_file_path = archive_folder / pkpass.archive_filename
         pkpass_file.move(archive_file_path)
         print(f"Archived PKPass to \"{archive_file_path}\"")
@@ -305,7 +324,7 @@ def refresh_routes() -> None:
     """Refreshes the routes table."""
     fl.refresh_routes()
 
-def _add_bp_flights(bp: BoardingPass) -> None:
+def _add_bp_flights(bp: BoardingPass, geojson: Path | None = None) -> None:
     """Builds Flights from a BoardingPass, and saves them."""
     if not bp.valid or len(bp.legs) == 0:
         print("⚠️ The boarding pass data is not valid.")
@@ -335,10 +354,23 @@ def _add_bp_flights(bp: BoardingPass) -> None:
         bp_flights.append(flight)
 
     # Save flights.
-    for flight in bp_flights:
-        flight.save()
+    if geojson is None:
+        for flight in bp_flights:
+            flight.save()
+    else:
+        if len(bp_flights) == 1:
+            bp_flights[0].save(geojson=geojson)
+        else:
+            for i, flight in enumerate(bp_flights):
+                gj_path = geojson.with_stem(f"{geojson.stem}_{i}")
+                flight.save(geojson=gj_path)
 
-def _add_fa_flight_results(aero_results: dict, fields: dict = None) -> None:
+
+def _add_fa_flight_results(
+    aero_results: dict,
+    fields: dict = None,
+    geojson: Path | None = None,
+) -> None:
     """Processes the results of an AeroAPI flights request."""
     flight = _flight_from_aeroapi_results(aero_results)
 
@@ -347,7 +379,7 @@ def _add_fa_flight_results(aero_results: dict, fields: dict = None) -> None:
         for key, value in fields.items():
             setattr(flight, key, value)
 
-    flight.save()
+    flight.save(geojson=geojson)
 
 def _flight_from_aeroapi_results(aero_results) -> fl.Flight:
     """Has user select flight from AeroAPI results and gets geometry."""

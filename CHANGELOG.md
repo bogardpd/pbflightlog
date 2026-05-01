@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `--geojson` argument for `add flight` to allow saving to a GeoJSON file instead of the flight log.
+
 ## [0.4.1]
 
 ### Fixed

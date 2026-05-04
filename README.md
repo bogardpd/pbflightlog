@@ -117,7 +117,7 @@ Generates an index of airports visited, sorted by number of visits. ([Layovers c
 Show 2015 airport visits:
 
 ```bash
-pbflightlog report airports --year 2015
+pbflightlog index airports --year 2015
 ```
 
 ```
@@ -139,7 +139,26 @@ pbflightlog report airports --year 2015
 Save 2015 airport visits to airports.csv:
 
 ```bash
-pbflightlog report airports --year 2015 --output airports.csv
+pbflightlog index airports --year 2015 --output airports.csv
+```
+
+### `index tails`
+
+Generates an index of tail numbers flown, sorted by number of flights.
+
+#### Examples
+
+```bash
+pbflightlog index tails
+```
+
+```
+Tail    Type                         Count
+------  -------------------------  -------
+N123AA  McDonnell Douglas MD-82          2
+N456BB  Embraer ERJ-145                  1
+N789CC  Embraer ERJ-145                  1
+3 tails(s) flown
 ```
 
 ### `show airport`

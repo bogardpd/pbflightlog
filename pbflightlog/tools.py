@@ -92,6 +92,12 @@ def main():
         type=int,
     )
 
+    # index_tails
+    index_tails_parser = index_parser_subparsers.add_parser(
+        "tails",
+        help="Display a tail number index",
+    )
+
     # show
     show_parser = subparsers.add_parser(
         "show",
@@ -163,6 +169,8 @@ def main():
     elif args.command == "index":
         if args.entity == "airports":
             index_airports(args.year, args.output)
+        elif args.entity == "tails":
+            index_tails()
     elif args.command == "show":
         if args.entity == "airport":
             show_airport(args.id)
@@ -292,19 +300,41 @@ def index_airports(
         print(tabulate(
             output.to_records(),
             headers=[
-                'fid',
-                'Rank',
-                'Name',
-                'IATA\nCode',
-                'ICAO\nCode',
-                'FAA\nLID',
-                'Visits'
+                "fid",
+                "Rank",
+                "Name",
+                "IATA\nCode",
+                "ICAO\nCode",
+                "FAA\nLID",
+                "Visit",
             ],
         ))
         print(f"{len(output)} airport(s) visited")
     else:
         output.to_csv(output_file, index=False)
         print(f"Wrote report to \"{output_file}\"")
+
+def index_tails() -> None:
+    """Provides an index of all tail numbers."""
+    flights_gdf = fl.Flight.all()
+    flights_gdf = flights_gdf.dropna(subset='tail_number')
+    tails_df = flights_gdf.groupby('tail_number').agg(
+        count=('tail_number', 'count'),
+        aircraft_type_fid=('aircraft_type_fid', 'last'),
+    )
+    types_gdf = fl.AircraftType.all()[['manufacturer', 'name']]
+    tails_df = tails_df.join(types_gdf, on='aircraft_type_fid')
+    tails_df['type'] = tails_df['manufacturer'].str.cat(
+        tails_df['name'],
+        sep=" ",
+    )
+    tails_df = tails_df.sort_values(
+        by=['count', tails_df.index.name],
+        ascending=[False, True],
+    )
+    tails_df = tails_df[['type', 'count']]
+    print(tabulate(tails_df.to_records(), headers=["Tail", "Type", "Count"]))
+    print(f"{len(tails_df)} tails(s) flown")
 
 def show_airport(identifier: str) -> None:
     """Shows data about a specific airport."""

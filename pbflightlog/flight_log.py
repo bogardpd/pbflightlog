@@ -8,6 +8,7 @@ import sqlite3
 import sys
 from datetime import datetime, date, timedelta
 from math import ceil
+from pathlib import Path
 from typing import Self
 from zoneinfo import ZoneInfo
 
@@ -272,6 +273,17 @@ class Flight(Record):
     def save(self, geojson: Path | None = None) -> None:
         """Appends a flight to the geopackage file."""
         record_gdf = self.gdf()
+
+        # Check for matching tail numbers.
+        if self.tail_number is not None:
+            tails_gdf = Flight.all()
+            tails_gdf = tails_gdf[tails_gdf['tail_number'] == self.tail_number]
+            if len(tails_gdf) > 0:
+                print(
+                    f"You've now had {len(tails_gdf) + 1} flights on tail "
+                    + f"number '{self.tail_number}'!"
+                )
+
         if geojson is not None:
             # Save to GeoJSON instead of database.
             record_gdf.to_file(geojson, driver='GeoJSON')

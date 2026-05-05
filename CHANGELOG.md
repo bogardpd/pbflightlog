@@ -4,7 +4,8 @@
 
 ### Added
 
-- `index_tails` subcommand to show a list of tail numbers sorted by flight count.
+- `index tails` subcommand to show a list of tail numbers sorted by flight count.
+- `show tail` subcommand to show a flight table for a particular tail number.
 - `--geojson` argument for `add flight` to allow saving to a GeoJSON file instead of the flight log.
 
 ## [0.4.1]

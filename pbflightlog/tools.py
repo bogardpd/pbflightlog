@@ -119,6 +119,16 @@ def main():
         type=str,
     )
 
+    # show tail
+    show_tail_parser = show_parser_subparsers.add_parser(
+        "tail",
+        help="Show details about a tail number",
+    )
+    show_tail_parser.add_argument("tail_number",
+        help="Tail number",
+        type=str,           
+    )
+
     # refresh
     refresh_parser = subparsers.add_parser(
         "refresh",
@@ -174,6 +184,8 @@ def main():
     elif args.command == "show":
         if args.entity == "airport":
             show_airport(args.id)
+        elif args.entity == "tail":
+            show_tail(args.tail_number)
     elif args.command == "refresh":
         if args.entity == "routes":
             refresh_routes()
@@ -349,6 +361,16 @@ def show_airport(identifier: str) -> None:
         | (flights_gdf['destination_airport_fid'] == airport.fid)
     ]
     print(fl.flights_table(flights_gdf, visit_airport_fid=airport.fid))
+
+def show_tail(tail_number: str) -> None:
+    """Shows data about a specific tail number."""
+    tail_number = tail_number.upper()
+    flights_gdf = fl.Flight.all()
+    flights_gdf = flights_gdf[flights_gdf['tail_number'] == tail_number]
+    if len(flights_gdf) == 0:
+        print(f"No flights found for tail number '{tail_number}'.")
+        sys.exit(0)
+    print(fl.flights_table(flights_gdf))
 
 def refresh_routes() -> None:
     """Refreshes the routes table."""

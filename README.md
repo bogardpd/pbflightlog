@@ -191,6 +191,23 @@ pbflightlog show airports LGA
   101   14  2024-01-09   DL 5843   LGA     RDU               10
  ```
 
+### `show tail`
+
+Shows a flight table for a particular tail number.
+
+#### Examples
+
+```bash
+pbflightlog show tail N123AA
+```
+
+```
+  fid    #  Departure    Flight    Orig    Dest
+-----  ---  -----------  --------  ------  ------
+  100    1  2012-03-16   AA 1000   DFW     ORD
+  200    2  2012-07-23   AA 1100   ORD     LAX
+```
+
 ### `refresh routes`
 
 Regenerates the routes table based on all origin and destination airport pairs present in the flights table. Generates great circle geometry for these routes.

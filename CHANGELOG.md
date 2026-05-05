@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.5.0]
+
 ### Added
 
 - `index tails` subcommand to show a list of tail numbers sorted by flight count.

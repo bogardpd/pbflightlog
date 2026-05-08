@@ -318,7 +318,7 @@ def index_airports(
                 "IATA\nCode",
                 "ICAO\nCode",
                 "FAA\nLID",
-                "Visit",
+                "Visits",
             ],
         ))
         print(f"{len(output)} airport(s) visited")
